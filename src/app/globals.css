@@ -35,6 +35,7 @@
   --color-gold-900: #583d21;
 
   --color-ivory: #f4f1ea;
+  --color-ink: #05080f; /* near-black navy — page background */
 
   /* 3. Fluid display scale (headings) ------------------------------------- */
   --text-display-2xl: clamp(2.75rem, 1.6rem + 5vw, 5.25rem);
@@ -52,14 +53,108 @@
   --tracking-eyebrow: 0.22em;
 
   --shadow-glow: 0 0 0 1px rgb(212 171 79 / 0.25), 0 10px 40px -10px rgb(212 171 79 / 0.35);
+  --shadow-card: 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(177 192 221 / 0.08);
+
+  /* 4. Motion ----------------------------------------------------------------- */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-spin-slow: spin 28s linear infinite;
+  --animate-spin-reverse: spin-reverse 40s linear infinite;
+  --animate-float: float 9s ease-in-out infinite;
+  --animate-float-delayed: float 11s ease-in-out -4s infinite;
+  --animate-marquee: marquee 50s linear infinite;
+  --animate-shimmer: shimmer 7s linear infinite;
+  --animate-pulse-glow: pulse-glow 5s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.7s var(--ease-out-expo) both;
+  --animate-twinkle: twinkle 4s ease-in-out infinite;
+  --animate-grid-flow: grid-flow 3s linear infinite;
+  --animate-scroll-cue: scroll-cue 2.2s var(--ease-out-expo) infinite;
+  --animate-sweep: sweep 4s ease-in-out infinite;
+
+  @keyframes spin-reverse {
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -14px, 0);
+    }
+  }
+  @keyframes marquee {
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+  @keyframes shimmer {
+    to {
+      background-position: 200% center;
+    }
+  }
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.9;
+      transform: scale(1.06);
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 12px, 0);
+    }
+  }
+  @keyframes grid-flow {
+    to {
+      background-position: 0 64px;
+    }
+  }
+  @keyframes scroll-cue {
+    0% {
+      opacity: 0;
+      transform: translate3d(0, -4px, 0);
+    }
+    40% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+  }
+  @keyframes sweep {
+    0% {
+      transform: translate3d(-100%, 0, 0);
+    }
+    100% {
+      transform: translate3d(400%, 0, 0);
+    }
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
 }
 
 /* 2. Semantic tokens --------------------------------------------------------
    `inline` so utilities resolve to the referenced palette value directly. */
 @theme inline {
-  --color-background: var(--color-navy-950);
-  --color-surface: var(--color-navy-900);
-  --color-surface-raised: var(--color-navy-800);
+  --color-background: var(--color-ink);
+  --color-surface: var(--color-navy-950);
+  --color-surface-raised: var(--color-navy-900);
   --color-border: rgb(177 192 221 / 0.12);
   --color-border-strong: rgb(177 192 221 / 0.24);
 
@@ -74,6 +169,7 @@
   /* Font families: CSS variables are set by next/font in app/layout.tsx */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-cormorant), ui-serif, Georgia, "Times New Roman", serif;
+  --font-korean: var(--font-noto-serif-kr), "Apple SD Gothic Neo", "Malgun Gothic", serif;
 }
 
 /* ==========================================================================
@@ -108,5 +204,107 @@
     html {
       scroll-behavior: smooth;
     }
+  }
+}
+
+/* ==========================================================================
+   Signature utilities
+   ========================================================================== */
+
+/* Animated gold foil text */
+@utility text-gold-foil {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-gold-600) 0%,
+    var(--color-gold-200) 25%,
+    var(--color-gold-400) 45%,
+    var(--color-gold-100) 60%,
+    var(--color-gold-500) 80%,
+    var(--color-gold-600) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Frosted glass panel */
+@utility glass {
+  background-color: rgb(15 26 48 / 0.45);
+  border: 1px solid rgb(177 192 221 / 0.12);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* 3D helpers */
+@utility preserve-3d {
+  transform-style: preserve-3d;
+}
+@utility perspective-scene {
+  perspective: 1400px;
+}
+
+/* Hide scrollbars on horizontal carousels while keeping them scrollable */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Scroll reveal (see components/motion/reveal.tsx)
+   Content is only hidden when JS runs and the user allows motion, so it is
+   always visible without JavaScript and for reduced-motion users.
+   ========================================================================== */
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transform: perspective(1200px) translate3d(0, 2.5rem, 0) rotateX(10deg);
+    transform-origin: 50% 100%;
+    transition:
+      opacity 1s var(--ease-out-expo),
+      transform 1.2s var(--ease-out-expo);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  [data-reveal][data-revealed] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Sticky header: transparent over the hero, solid once the page scrolls.
+   Pure CSS scroll-driven animation with a solid fallback. */
+.header-surface {
+  background-color: rgb(5 8 15 / 0.82);
+  border-color: var(--color-border);
+}
+@supports (animation-timeline: scroll()) {
+  .header-surface {
+    animation: header-solidify linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 180px;
+  }
+}
+@keyframes header-solidify {
+  from {
+    background-color: rgb(5 8 15 / 0);
+    border-color: transparent;
+  }
+  to {
+    background-color: rgb(5 8 15 / 0.82);
+    border-color: var(--color-border);
+  }
+}
+
+/* Respect reduced motion everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

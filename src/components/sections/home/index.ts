@@ -1,4 +1,11 @@
-export { Approach } from "./approach";
-export { ClosingCta } from "./closing-cta";
+export { About } from "./about";
+export { Contact } from "./contact";
+export { Courses } from "./courses";
+export { EnrollCta } from "./enroll-cta";
 export { Hero } from "./hero";
 export { Journey } from "./journey";
+export { KoreanCourse } from "./korean-course";
+export { NiginaShowcase } from "./nigina-showcase";
+export { Results } from "./results";
+export { SubjectMarquee } from "./subject-marquee";
+export { Teachers } from "./teachers";

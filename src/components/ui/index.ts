@@ -4,5 +4,8 @@ export type { ButtonLinkProps, ButtonProps } from "./button";
 export { Card } from "./card";
 export { Container } from "./container";
 export { GoldRule } from "./divider";
+export { SampleBadge } from "./sample-badge";
 export { Section } from "./section";
+export { SectionHeader } from "./section-header";
+export { SocialIcon } from "./social-icon";
 export { Eyebrow, Heading, Text } from "./typography";

@@ -32,9 +32,22 @@ Rules for any AI agent (and human) working in this repository. These rules are
 
 ## 2. Current scope
 
-The project is at the **foundation** stage. The following are **not implemented
-and must not be added without an explicit task**: authentication, payments,
-database, AI agents, admin functionality, course catalogue, user accounts.
+**Phase 1 (premium homepage)** is implemented. The following are **not
+implemented and must not be added without an explicit task**: authentication,
+payments, database, AI agents (NIGINA is a visual preview only), admin
+functionality, course detail pages, user accounts, online enrollment.
+
+### Sample content ("Namuna")
+
+The owner approved clearly labelled sample data for the homepage. All of it lives
+in **`src/content/home.ts`** (subjects, Korean programme, teachers, results). Each
+block has an `isSample` / `*AreSample` flag that renders a visible **"Namuna"**
+badge. Rules:
+
+- Never present sample content as real; never remove a badge while data is still sample.
+- When real data arrives, replace it in `src/content/home.ts` and set the flag to `false`.
+- Contact channels and social accounts are `null` in `src/config/site.ts` until real
+  values exist; the UI then shows "Tez orada" instead of dead links.
 
 ## 3. Quality checks
 
@@ -64,10 +77,14 @@ every push and pull request (`.github/workflows/ci.yml`).
 src/
 ├── app/                    # Routing ONLY: layouts, pages, metadata, globals.css
 ├── components/
-│   ├── ui/                 # Design-system primitives (Button, Heading, Card…). No business logic.
-│   ├── layout/             # Site chrome (header, footer, nav, logo)
+│   ├── ui/                 # Design-system primitives (Button, Heading, Card, SectionHeader…). No business logic.
+│   ├── motion/             # Client animation primitives: Reveal, TiltCard, CountUp, ParallaxScene
+│   ├── layout/             # Site chrome (header, navs, footer, logo, NIGINA launcher)
+│   ├── nigina/             # NIGINA assistant visuals (orb, preview panel)
 │   └── sections/<page>/    # Page-specific sections composed from ui/ primitives
-├── config/                 # site.ts (brand, nav), env.ts (typed public env)
+├── config/                 # site.ts (brand, nav, contacts, socials), env.ts (typed public env)
+├── content/                # Page copy and data (home.ts) — edit content here, not in components
+├── hooks/                  # Client hooks (use-active-section scroll-spy)
 ├── lib/                    # Framework-agnostic utilities (cn)
 └── types/                  # Shared TypeScript types
 ```
@@ -106,6 +123,23 @@ Defined in `src/app/globals.css` (`@theme`). Dark navy + gold, premium and restr
   icon-only buttons, respect `prefers-reduced-motion`.
 - Test every UI change at mobile (~390px), tablet (~820px) and desktop (~1440px)
   with no horizontal overflow.
+
+### Motion & 3D
+
+- Use the primitives in `src/components/motion/`. Animate only `transform`/`opacity`.
+- Every animation must respect `prefers-reduced-motion` (a global rule in `globals.css`
+  covers CSS animations; JS effects check the media query).
+- `Reveal` content must stay visible without JavaScript (handled by the
+  `@media (scripting: enabled)` rule) — do not hide content any other way.
+- Inside a `preserve-3d` scene, **do not use** `backdrop-filter`, `filter: blur` or outer
+  `box-shadow` — Chromium clips them to square layer boxes. Put glows/glass in a flat
+  sibling layer (see `hero.tsx`). Overlays must use opaque surfaces, not `glass`.
+
+### Language
+
+- Default UI language is **Uzbek (Latin script)**, `<html lang="uz">`.
+- Use the correct characters: `oʻ`/`gʻ` with **ʻ (U+02BB)** and the tutuq belgisi
+  **ʼ (U+02BC)** — never a plain `'`. The brand slogan stays in English.
 
 ## 7. Git
 

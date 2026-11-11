@@ -2,9 +2,11 @@
 
 A premium international online education platform.
 
-> **Status: foundation.** The project architecture, design system and a responsive
-> homepage foundation are in place. Authentication, payments, database, AI and
-> admin features are **not implemented yet**.
+> **Status: Phase 1 — premium homepage.** Uzbek-language, responsive homepage with
+> courses, featured Korean course, teachers, results, learning journey and the NIGINA
+> assistant preview. Teachers, results and course details are **labelled sample data**
+> ("Namuna") kept in `src/content/home.ts`. Authentication, payments, database, AI,
+> online enrollment and admin features are **not implemented yet**.
 
 ## Tech stack
 
@@ -43,9 +45,13 @@ src/
 ├── app/                 # Routes, layouts, metadata, global styles & tokens
 ├── components/
 │   ├── ui/              # Design-system primitives
-│   ├── layout/          # Header, footer, navigation
+│   ├── motion/          # Animation primitives (reveal, tilt, count-up, parallax)
+│   ├── layout/          # Header, footer, navigation, NIGINA launcher
+│   ├── nigina/          # NIGINA assistant visuals
 │   └── sections/home/   # Homepage sections
-├── config/              # Site config and typed environment access
+├── config/              # Site config (nav, contacts, socials) and typed env access
+├── content/             # Page content — replace sample data here
+├── hooks/               # Client hooks
 ├── lib/                 # Utilities
 └── types/               # Shared types
 ```

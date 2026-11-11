@@ -3,16 +3,24 @@
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 
+import { buttonStyles } from "@/components/ui/button";
+import { useActiveSection } from "@/hooks/use-active-section";
+import { cn } from "@/lib/cn";
 import type { NavItem } from "@/types/navigation";
 
 type MobileNavProps = {
   items: NavItem[];
+  ctaHref: string;
+  ctaLabel: string;
 };
 
-/** Disclosure-style menu for small screens. Hidden from md breakpoint up. */
-export function MobileNav({ items }: MobileNavProps) {
+/** Disclosure-style menu for small screens and tablets. Hidden from lg up. */
+export function MobileNav({ items, ctaHref, ctaLabel }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const active = useActiveSection(
+    items.flatMap((item) => (item.sectionId ? [item.sectionId] : [])),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -24,13 +32,13 @@ export function MobileNav({ items }: MobileNavProps) {
   }, [open]);
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
-        className="inline-flex size-11 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-accent"
+        className="inline-flex size-11 items-center justify-center rounded-full border border-border-strong text-foreground transition-colors hover:border-accent"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={open ? "Close menu" : "Open menu"}
+        aria-label={open ? "Menyuni yopish" : "Menyuni ochish"}
         onClick={() => setOpen((value) => !value)}
       >
         <svg
@@ -44,7 +52,7 @@ export function MobileNav({ items }: MobileNavProps) {
           {open ? (
             <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
           ) : (
-            <path strokeLinecap="round" d="M4 7h16M4 12h16M4 17h16" />
+            <path strokeLinecap="round" d="M4 7h16M4 12h10M4 17h16" />
           )}
         </svg>
       </button>
@@ -52,22 +60,43 @@ export function MobileNav({ items }: MobileNavProps) {
       <div
         id={panelId}
         hidden={!open}
-        className="absolute inset-x-0 top-full border-b border-border bg-background shadow-2xl shadow-black/40"
+        className="absolute inset-x-0 top-full border-b border-border bg-background shadow-2xl shadow-black/60"
       >
-        <nav aria-label="Mobile">
-          <ul className="flex flex-col px-5 py-4">
-            {items.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="block py-3 text-base text-muted transition-colors hover:text-foreground"
-                  onClick={() => setOpen(false)}
+        <nav aria-label="Mobil menyu" className="px-5 pt-3 pb-6 sm:px-8">
+          <ul className="flex flex-col">
+            {items.map((item, index) => {
+              const isActive = item.sectionId === active;
+              return (
+                <li
+                  key={item.href}
+                  className="animate-fade-up border-b border-border last:border-0"
+                  style={{ animationDelay: `${index * 40}ms` }}
                 >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? "location" : undefined}
+                    className={cn(
+                      "flex items-center justify-between py-3.5 text-base transition-colors",
+                      isActive ? "text-accent" : "text-muted hover:text-foreground",
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    {item.label}
+                    <span aria-hidden="true" className="text-subtle">
+                      →
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
+          <Link
+            href={ctaHref}
+            onClick={() => setOpen(false)}
+            className={buttonStyles({ size: "md", className: "mt-5 w-full" })}
+          >
+            {ctaLabel}
+          </Link>
         </nav>
       </div>
     </div>

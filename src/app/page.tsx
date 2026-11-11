@@ -1,12 +1,33 @@
-import { Approach, ClosingCta, Hero, Journey } from "@/components/sections/home";
+import { NiginaLauncher } from "@/components/layout";
+import {
+  About,
+  Contact,
+  Courses,
+  EnrollCta,
+  Hero,
+  Journey,
+  KoreanCourse,
+  NiginaShowcase,
+  Results,
+  SubjectMarquee,
+  Teachers,
+} from "@/components/sections/home";
 
 export default function HomePage() {
   return (
     <>
       <Hero />
-      <Approach />
+      <SubjectMarquee />
+      <Courses />
+      <KoreanCourse />
+      <Teachers />
+      <Results />
       <Journey />
-      <ClosingCta />
+      <About />
+      <NiginaShowcase />
+      <EnrollCta />
+      <Contact />
+      <NiginaLauncher />
     </>
   );
 }
