@@ -1,2 +1,56 @@
-# -macademy-online-school
-M.ACADEMY Online School
+# M.ACADEMY ONLINE SCHOOL
+
+A premium international online education platform.
+
+> **Status: foundation.** The project architecture, design system and a responsive
+> homepage foundation are in place. Authentication, payments, database, AI and
+> admin features are **not implemented yet**.
+
+## Tech stack
+
+- [Next.js 16](https://nextjs.org) (App Router, Turbopack, Cache Components)
+- React 19 · TypeScript (strict)
+- Tailwind CSS v4 (design tokens in `src/app/globals.css`)
+- ESLint · Prettier (+ Tailwind class sorting) · GitHub Actions CI
+
+## Getting started
+
+Requires Node.js ≥ 20.9 (22 recommended, see `.nvmrc`).
+
+```bash
+npm install
+cp .env.example .env.local   # then adjust values if needed
+npm run dev                  # http://localhost:3000
+```
+
+## Scripts
+
+| Command                | Purpose                                     |
+| ---------------------- | ------------------------------------------- |
+| `npm run dev`          | Start the development server                |
+| `npm run build`        | Production build                            |
+| `npm run start`        | Serve the production build                  |
+| `npm run lint`         | ESLint                                      |
+| `npm run typecheck`    | Generate route types and run `tsc --noEmit` |
+| `npm run format`       | Format all files with Prettier              |
+| `npm run format:check` | Verify formatting                           |
+| `npm run check`        | Lint + typecheck + format check + build     |
+
+## Project structure
+
+```
+src/
+├── app/                 # Routes, layouts, metadata, global styles & tokens
+├── components/
+│   ├── ui/              # Design-system primitives
+│   ├── layout/          # Header, footer, navigation
+│   └── sections/home/   # Homepage sections
+├── config/              # Site config and typed environment access
+├── lib/                 # Utilities
+└── types/               # Shared types
+```
+
+## Contributing
+
+Development rules for humans and AI agents live in [`CLAUDE.md`](./CLAUDE.md).
+Read it before making changes.
