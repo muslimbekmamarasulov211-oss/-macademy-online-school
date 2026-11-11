@@ -17,7 +17,7 @@ A premium international online education platform.
 
 ## Getting started
 
-Requires Node.js ≥ 20.9 (22 recommended, see `.nvmrc`).
+Requires Node.js 22 (see `.nvmrc`; pinned via `engines` in `package.json` so Vercel uses the same version).
 
 ```bash
 npm install
