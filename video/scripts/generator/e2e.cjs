@@ -215,7 +215,7 @@ const fillForm = async (page, o) => {
 
     await waitForFinish(page);
     assert.match(await page.textContent("#step"), /^Tayyor/, await page.textContent("#detail"));
-    const hrefs = await page.$$eval("#result a", (a) => a.map((x) => x.getAttribute("href")));
+    const hrefs = await page.$$eval("#result a.action.solid", (a) => a.map((x) => x.getAttribute("href")));
     assert.deepEqual(hrefs, [
       "/videos/e2e-toliq-reels.mp4?download",
       "/videos/e2e-toliq-youtube.mp4?download",
@@ -272,7 +272,7 @@ const fillForm = async (page, o) => {
     await page.click("#submit");
     await waitForFinish(page);
     assert.match(await page.textContent("#step"), /^Tayyor/, await page.textContent("#detail"));
-    const hrefs = await page.$$eval("#result a", (a) => a.map((x) => x.getAttribute("href")));
+    const hrefs = await page.$$eval("#result a.action.solid", (a) => a.map((x) => x.getAttribute("href")));
     assert.deepEqual(hrefs, ["/videos/e2e-youtube-youtube.mp4?download"]);
     await checkDownload(request, hrefs[0], "video/mp4");
     await checkDownload(request, "/audio/e2e-youtube.wav?download", "audio/wav");

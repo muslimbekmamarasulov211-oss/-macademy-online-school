@@ -15,6 +15,7 @@
     "render": "remotion render",
     "test": "tsx --test scripts/**/*.test.ts",
     "e2e": "node scripts/generator/e2e.cjs",
+    "e2e:ipad": "node scripts/generator/e2e-ipad.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

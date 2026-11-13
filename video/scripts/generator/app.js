@@ -180,22 +180,37 @@ const TIMING_TEXT = {
   estimated: "Subtitr vaqti taxminiy.",
 };
 
-/** iPad/iPhone: offer the system share sheet ("Save Video" → Photos) when it supports files. */
-const addShareButton = async (container, url, fileName) => {
+/**
+ * iPad/iPhone: offer the system share sheet ("Save Video" → Photos) when the browser can
+ * share files. The video is fetched in advance, so tapping the button opens the sheet at once
+ * (Safari only allows sharing directly inside the tap).
+ */
+const addShareButton = async (container, note, url, fileName) => {
   if (!navigator.canShare) return;
   try {
     const blob = await (await fetch(url)).blob();
-    const file = new File([blob], fileName, { type: blob.type || "video/mp4" });
+    const file = new File([blob], fileName, { type: "video/mp4" });
     if (!navigator.canShare({ files: [file] })) return;
     const btn = el("button", {
       type: "button",
       className: "action",
       textContent: "Rasmlarga saqlash / Ulashish",
     });
-    btn.addEventListener("click", () => navigator.share({ files: [file] }).catch(() => {}));
+    btn.addEventListener("click", async () => {
+      note.hidden = true;
+      try {
+        await navigator.share({ files: [file] });
+      } catch (err) {
+        if (err?.name === "AbortError") return; // the person closed the share sheet
+        note.textContent =
+          "Ulashish bu oynada ishlamadi. “Yangi oynada ochish” ni bosing, keyin Safari’dagi " +
+          "Ulashish tugmasi → “Save Video” (Videoni saqlash). Yoki “MP4 yuklab olish” dan foydalaning.";
+        note.hidden = false;
+      }
+    });
     container.append(btn);
   } catch {
-    // Sharing is optional; the download link always works.
+    // Sharing is optional; download and "open in new window" always work.
   }
 };
 
@@ -204,14 +219,22 @@ const showVideos = (outputs) => {
   box.replaceChildren(
     ...outputs.map((o) => {
       const src = `/videos/${encodeURIComponent(o.file)}.mp4`;
+      const note = el("p", { className: "hint", hidden: true });
       const actions = el("div", { className: "result-actions" }, [
         el("a", {
           className: "action solid",
           href: `${src}?download`,
           textContent: "MP4 yuklab olish",
         }),
+        el("a", {
+          className: "action",
+          href: src,
+          target: "_blank",
+          rel: "noopener",
+          textContent: "Yangi oynada ochish",
+        }),
       ]);
-      void addShareButton(actions, src, `${o.file}.mp4`);
+      void addShareButton(actions, note, src, `${o.file}.mp4`);
       return el("div", { className: "result-item" }, [
         el("strong", { textContent: o.label }),
         el("video", {
@@ -221,6 +244,7 @@ const showVideos = (outputs) => {
           preload: "metadata",
         }),
         actions,
+        note,
       ]);
     }),
   );

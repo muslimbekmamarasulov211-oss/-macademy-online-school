@@ -109,7 +109,12 @@ export const renderVoiceVideo = async ({
       inputProps,
       codec: "h264",
       imageFormat: "jpeg",
+      jpegQuality: 92,
       pixelFormat: "yuv420p",
+      // Standard video colours (BT.709, limited range) — what iPhone/iPad, Photos, Instagram
+      // and YouTube expect. The default produced full-range BT.601 files that browsers show
+      // too dark (navy background almost black; measured mean error 13 → 1 with bt709).
+      colorSpace: "bt709",
       browserExecutable,
       outputLocation,
       overwrite: true,

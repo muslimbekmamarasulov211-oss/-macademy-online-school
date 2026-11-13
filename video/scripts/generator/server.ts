@@ -145,9 +145,23 @@ const isTrustedRequest = (req: http.IncomingMessage) =>
   req.headers[CSRF_HEADER] === "1" &&
   (req.headers["content-type"] ?? "").startsWith("application/json");
 
-const timestampName = () => {
+/** Turn an Uzbek title into a file-name part: "Yangi dars boshlanadi!" → "yangi-dars-boshlanadi". */
+const slugify = (title: string) =>
+  title
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u02BB\u02BC'`‘’ʻʼ]/g, "") // oʻ → o, taʼlim → talim
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40)
+    .replace(/-+$/g, "");
+
+/** Default file name: from the title when there is one, plus a time stamp so names stay unique. */
+const defaultName = (title: string | null) => {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
+  const slug = title ? slugify(title) : "";
+  if (slug) return `${slug}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
   return `video-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 };
 
@@ -214,7 +228,7 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
   const name =
     typeof body.name === "string" && body.name.trim()
       ? body.name.trim().toLowerCase()
-      : timestampName();
+      : defaultName(title);
 
   if (text.trim().length === 0) return send(res, 400, { error: "Matn kiriting." });
   if (text.length > MAX_TEXT_LENGTH) return send(res, 400, { error: toUzbek("Text is longer") });
