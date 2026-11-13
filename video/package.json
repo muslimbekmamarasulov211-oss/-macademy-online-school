@@ -5,16 +5,21 @@
   "description": "M.ACADEMY vertical (1080x1920) Uzbek video studio built with Remotion",
   "scripts": {
     "studio": "remotion studio",
+    "generator": "tsx --env-file-if-exists=.env scripts/generator/server.ts",
     "voice": "tsx --env-file-if-exists=.env scripts/voice.ts",
     "make": "tsx --env-file-if-exists=.env scripts/make.ts",
+    "check-env": "tsx --env-file-if-exists=.env scripts/check-env.ts",
     "render:test": "remotion render TestVideo out/test-video.mp4",
     "render": "remotion render",
     "test": "tsx --test scripts/**/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@remotion/bundler": "^4.0.543",
     "@remotion/cli": "4.0.543",
     "@remotion/fonts": "^4.0.543",
+    "@remotion/renderer": "^4.0.543",
+    "https-proxy-agent": "^7.0.6",
     "microsoft-cognitiveservices-speech-sdk": "^1.53.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
