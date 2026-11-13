@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="utf-8" />
+    <title>M.ACADEMY Reels renderer</title>
+    <link rel="stylesheet" href="../assets/fonts/fonts.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #000;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c" width="1080" height="1920"></canvas>
+    <script src="core.js"></script>
+    <script src="scenes.js"></script>
+    <script>
+      const cv = document.getElementById("c");
+      const ctx2d = cv.getContext("2d");
+      window.TIMELINE = window.TIMELINE || { subtitles: [] };
+      window.ready = (async () => {
+        const faces = [
+          "700 40px Cinzel",
+          "500 40px Cinzel",
+          "500 40px 'Cormorant Garamond'",
+          "600 40px 'Cormorant Garamond'",
+          "700 40px 'Cormorant Garamond'",
+          "400 40px Amiri",
+        ];
+        for (const f of faces) await document.fonts.load(f, "AaʻʼЎ ابت");
+        await document.fonts.ready;
+        buildSprites();
+        return true;
+      })();
+      /** Render frame at time t and return it as a JPEG data URL. */
+      window.frame = async (t, quality = 0.95) => {
+        await window.ready;
+        renderFrame(ctx2d, t, window.TIMELINE);
+        return cv.toDataURL("image/jpeg", quality);
+      };
+    </script>
+  </body>
+</html>

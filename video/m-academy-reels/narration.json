@@ -1,0 +1,85 @@
+{
+  "fps": 30,
+  "duration": 59,
+  "scenes": [
+    {
+      "id": "s1",
+      "start": 0,
+      "end": 8,
+      "voStart": 1.2,
+      "text": "Bir zamonlar ajdodlarimiz ilm yoʻlida butun umrini bagʻishlagan.",
+      "tts": "Бир замонлар, аждодларимиз илм йўлида, бутун умрини бағишлаган.",
+      "subs": [
+        "Bir zamonlar ajdodlarimiz",
+        "ilm yoʻlida butun umrini bagʻishlagan."
+      ]
+    },
+    {
+      "id": "s2",
+      "start": 8,
+      "end": 18,
+      "voStart": 8.6,
+      "text": "Imom al-Buxoriy, Ibn Sino, al-Xorazmiy kabi buyuk allomalar ilm bilan dunyoni oʻzgartirdi.",
+      "tts": "Имом ал-Бухорий, Ибн Сино, ал-Хоразмий каби буюк алломалар, илм билан дунёни ўзгартирди.",
+      "subs": [
+        "Imom al-Buxoriy, Ibn Sino, al-Xorazmiy",
+        "kabi buyuk allomalar",
+        "ilm bilan dunyoni oʻzgartirdi."
+      ]
+    },
+    {
+      "id": "s3",
+      "start": 18,
+      "end": 27,
+      "voStart": 18.5,
+      "text": "Ularning kuchi — qiziquvchanlik, sabr, intizom va bilimga cheksiz muhabbat edi.",
+      "tts": "Уларнинг кучи, қизиқувчанлик, сабр, интизом, ва билимга чексиз муҳаббат эди.",
+      "subs": [
+        "Ularning kuchi —",
+        "qiziquvchanlik, sabr, intizom",
+        "va bilimga cheksiz muhabbat edi."
+      ]
+    },
+    {
+      "id": "s4",
+      "start": 27,
+      "end": 38,
+      "voStart": 27.5,
+      "text": "Bugun esa koʻpchiligimiz vaqtimizni chalgʻituvchi narsalarga sarflaymiz. Oʻrganishni xohlaymiz, ammo nimadan boshlashni bilmaymiz.",
+      "tts": "Бугун эса, кўпчилигимиз вақтимизни чалғитувчи нарсаларга сарфлаймиз. Ўрганишни хоҳлаймиз, аммо нимадан бошлашни билмаймиз.",
+      "subs": [
+        "Bugun esa koʻpchiligimiz",
+        "vaqtimizni chalgʻituvchi narsalarga sarflaymiz.",
+        "Oʻrganishni xohlaymiz,",
+        "ammo nimadan boshlashni bilmaymiz."
+      ]
+    },
+    {
+      "id": "s5",
+      "start": 38,
+      "end": 49,
+      "voStart": 38.5,
+      "text": "Ammo bugun bilim olish uchun imkoniyatlar koʻproq. Toʻgʻri yoʻl, sifatli taʼlim va izchil harakat — oʻzgarishning boshlanishi.",
+      "tts": "Аммо бугун, билим олиш учун имкониятлар кўпроқ. Тўғри йўл, сифатли таълим ва изчил ҳаракат, ўзгаришнинг бошланиши.",
+      "subs": [
+        "Ammo bugun bilim olish uchun",
+        "imkoniyatlar koʻproq.",
+        "Toʻgʻri yoʻl, sifatli taʼlim va izchil harakat —",
+        "oʻzgarishning boshlanishi."
+      ]
+    },
+    {
+      "id": "s6",
+      "start": 49,
+      "end": 59,
+      "voStart": 49.6,
+      "text": "Siz ham oʻz kelajagingizni yarating. M.ACADEMYʼga obuna boʻling va ilmingizni keyingi bosqichga olib chiqing!",
+      "tts": "Сиз ҳам, ўз келажагингизни яратинг. Эм Академига обуна бўлинг, ва илмингизни кейинги босқичга олиб чиқинг!",
+      "subs": [
+        "Siz ham oʻz kelajagingizni yarating.",
+        "M.ACADEMYʼga obuna boʻling",
+        "va ilmingizni keyingi bosqichga olib chiqing!"
+      ]
+    }
+  ]
+}
