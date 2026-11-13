@@ -1,7 +1,17 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { colors, fonts } from "../theme";
-import type { Caption } from "../types";
+import type { Caption, Word } from "../types";
+
+const evenlySpread = (caption: Caption): Word[] => {
+  const texts = caption.text.split(" ");
+  const perWord = ((caption.endMs - caption.startMs) * 0.75) / texts.length;
+  return texts.map((text, i) => ({
+    text,
+    startMs: caption.startMs + i * perWord,
+    endMs: caption.startMs + (i + 1) * perWord,
+  }));
+};
 
 type Props = {
   captions: Caption[];
@@ -10,7 +20,7 @@ type Props = {
 };
 
 /**
- * Word-by-word animated subtitles. Each word pops in as it is "spoken",
+ * Word-by-word animated subtitles. Each word pops in exactly when it is spoken,
  * and the current word is highlighted in gold.
  */
 export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) => {
@@ -21,10 +31,9 @@ export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) =
   const caption = captions.find((c) => ms >= c.startMs && ms < c.endMs);
   if (!caption) return null;
 
-  const words = caption.text.split(" ");
-  const span = caption.endMs - caption.startMs;
-  // Words appear across the first 75% of the caption, leaving time to read.
-  const perWord = (span * 0.75) / words.length;
+  // Exact word timings from the TTS engine when available, otherwise spread evenly
+  // across the first 75% of the line (leaving time to read).
+  const words = caption.words ?? evenlySpread(caption);
   const startFrame = (caption.startMs / 1000) * fps;
   const exit = interpolate(ms, [caption.endMs - 200, caption.endMs], [1, 0], {
     extrapolateLeft: "clamp",
@@ -51,14 +60,13 @@ export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) =
         }}
       >
         {words.map((word, i) => {
-          const wordStartMs = caption.startMs + i * perWord;
-          const wordFrame = (wordStartMs / 1000) * fps;
+          const wordFrame = (word.startMs / 1000) * fps;
           const pop = spring({
             frame: frame - wordFrame,
             fps,
             config: { damping: 12, stiffness: 180, mass: 0.6 },
           });
-          const isActive = ms >= wordStartMs && ms < wordStartMs + perWord;
+          const isActive = ms >= word.startMs && ms < word.endMs;
           return (
             <span
               key={`${startFrame}-${i}`}
@@ -73,7 +81,7 @@ export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) =
                 display: "inline-block",
               }}
             >
-              {word}
+              {word.text}
             </span>
           );
         })}
