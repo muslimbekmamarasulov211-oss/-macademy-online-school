@@ -7,7 +7,15 @@ import {
 } from "./compositions/VoiceVideo";
 import { TestVideo, testCaptions, type TestVideoProps } from "./compositions/TestVideo";
 
-// All compositions are vertical 1080x1920 (9:16) at 30 fps.
+const voiceVideoDefaults: VoiceVideoProps = {
+  name: "namuna",
+  title: null,
+  musicSrc: "music/ilhom.mp3",
+  musicVolume: 0.18,
+  backgroundClipSrc: null,
+};
+
+// All compositions run at 30 fps. VoiceVideoWide is 16:9, the rest 9:16.
 export const RemotionRoot: React.FC = () => {
   return (
     <>
@@ -28,8 +36,8 @@ export const RemotionRoot: React.FC = () => {
           } satisfies TestVideoProps
         }
       />
-      {/* Uzbek AI voiceover video. Length follows the voice (see calculateMetadata).
-        Generate the voice first: npm run voice -- <name> */}
+      {/* Uzbek AI voiceover video — 9:16 (Reels / Shorts / TikTok).
+        Length follows the voice (see calculateMetadata). Generate the voice first. */}
       <Composition
         id="VoiceVideo"
         component={VoiceVideo}
@@ -38,14 +46,18 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
-        defaultProps={
-          {
-            name: "namuna",
-            title: null,
-            musicSrc: null,
-            backgroundClipSrc: null,
-          } satisfies VoiceVideoProps
-        }
+        defaultProps={voiceVideoDefaults}
+      />
+      {/* Same video, 16:9 (YouTube). The layout adapts automatically. */}
+      <Composition
+        id="VoiceVideoWide"
+        component={VoiceVideo}
+        calculateMetadata={calculateVoiceVideoMetadata}
+        durationInFrames={300}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={voiceVideoDefaults}
       />
     </>
   );

@@ -72,10 +72,22 @@ export const toVoiceSettings = (o: {
 export const USAGE =
   "Usage: npm run make -- <name> [--engine navoiy|azure] [--emotion xotirjam|xursand|…]\n" +
   '       [--ref namuna] [--voice madina|sardor] [--rate -10] [--format wav|mp3] [--title "…"]\n' +
+  "       [--aspect both|reels|youtube] [--music ilhom|tinch|energiya|none] [--music-volume 0.18]\n" +
   "<name> = file texts/<name>.txt";
 
 export const parseCliArgs = (argv: string[]) => {
-  const flags = ["--engine", "--voice", "--emotion", "--ref", "--rate", "--format", "--title"];
+  const flags = [
+    "--engine",
+    "--voice",
+    "--emotion",
+    "--ref",
+    "--rate",
+    "--format",
+    "--title",
+    "--aspect",
+    "--music",
+    "--music-volume",
+  ];
   const get = (flag: string) => {
     const i = argv.indexOf(flag);
     return i >= 0 ? argv[i + 1] : undefined;
@@ -92,7 +104,17 @@ export const parseCliArgs = (argv: string[]) => {
     rate: get("--rate") === undefined ? 0 : Number(get("--rate")),
     format: get("--format"),
   });
-  return { name, settings, title: get("--title") ?? null };
+  const aspect = get("--aspect") ?? "both";
+  return {
+    name,
+    settings,
+    title: get("--title") ?? null,
+    video: {
+      formats: aspect === "both" ? ["reels", "youtube"] : aspect.split(","),
+      music: get("--music"),
+      musicVolume: get("--music-volume") === undefined ? undefined : Number(get("--music-volume")),
+    },
+  };
 };
 
 /** Save the user's text as texts/<name>.txt (kept in the project). */

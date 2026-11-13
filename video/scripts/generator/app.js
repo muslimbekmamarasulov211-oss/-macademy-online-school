@@ -15,7 +15,25 @@ const EMOTION_LABELS = {
   kinoyali: "Kinoyali",
 };
 
+const MUSIC_LABELS = {
+  tinch: "Tinch",
+  ilhom: "Ilhom",
+  energiya: "Energiya",
+};
+
 let status = null;
+
+$("video").addEventListener("change", () => {
+  $("video-options").hidden = !$("video").checked;
+});
+$("music-volume").addEventListener("input", () => {
+  $("music-volume-value").textContent = `${$("music-volume").value}%`;
+});
+$("music").addEventListener("change", () => {
+  const id = $("music").value;
+  $("music-preview").hidden = !id;
+  if (id) $("music-preview").src = `/music/${encodeURIComponent(id)}.mp3`;
+});
 
 $("text").addEventListener("input", () => {
   $("count").textContent = `${$("text").value.length} / 5000`;
@@ -90,6 +108,10 @@ const refreshStatus = async () => {
       status.referenceVoices.map((v) => [v, v === "namuna" ? "Namuna (standart)" : v]),
     ),
   );
+  const hadMusic = $("music").options.length > 0;
+  fillSelect($("music"), ["", ...status.music], { "": "Musiqasiz", ...MUSIC_LABELS });
+  if (!hadMusic && status.music.includes("ilhom")) $("music").value = "ilhom";
+  $("music").dispatchEvent(new Event("change"));
   $("navoiy-state").textContent = status.navoiyInstalled ? "lokal model · bepul" : "oʻrnatilmagan";
   $("azure-state").textContent = status.azureConfigured ? "bulut · tayyor" : "bulut · kalit yoʻq";
   renderVideoList(status.videos);
@@ -121,6 +143,29 @@ const showAudio = (job) => {
   $("audio-result").hidden = false;
 };
 
+const showVideos = (outputs) => {
+  const box = $("result");
+  box.replaceChildren(
+    ...outputs.flatMap((o) => {
+      const src = `/videos/${encodeURIComponent(o.file)}.mp4`;
+      const title = document.createElement("strong");
+      title.textContent = o.label;
+      title.style.display = "block";
+      title.style.marginTop = "20px";
+      const video = document.createElement("video");
+      video.controls = true;
+      video.playsInline = true;
+      video.src = `${src}?t=${Date.now()}`;
+      const link = document.createElement("a");
+      link.className = "download";
+      link.href = `${src}?download`;
+      link.textContent = `⬇ ${o.label} MP4 ni yuklab olish`;
+      return [title, video, link];
+    }),
+  );
+  box.hidden = false;
+};
+
 const poll = async (id) => {
   for (;;) {
     await sleep(1000);
@@ -134,8 +179,9 @@ const poll = async (id) => {
       );
     }
     if (job.state === "render") {
+      const fmt = job.renderingFormat === "youtube" ? "16:9 YouTube" : "9:16 Reels";
       showStep(
-        `2/3 · Video render qilinmoqda… ${Math.round(job.progress * 100)}%`,
+        `2/3 · Video render qilinmoqda (${fmt})… ${Math.round(job.progress * 100)}%`,
         0.5 + job.progress * 0.5,
         TIMING_TEXT[job.timing] ?? "",
       );
@@ -144,12 +190,7 @@ const poll = async (id) => {
     if (job.state === "done") {
       showStep("Tayyor ✓", 1, `${TIMING_TEXT[job.timing] ?? ""}`);
       showAudio(job);
-      if (job.videoRequested) {
-        const src = `/videos/${encodeURIComponent(job.name)}.mp4`;
-        $("player").src = `${src}?t=${Date.now()}`;
-        $("download").href = `${src}?download`;
-        $("result").hidden = false;
-      }
+      if (job.videoRequested) showVideos(job.outputs);
       return;
     }
   }
@@ -161,6 +202,12 @@ form.addEventListener("submit", async (e) => {
   const data = Object.fromEntries(fd);
   data.rate = Number(data.rate);
   data.video = $("video").checked;
+  data.formats = fd.getAll("formats");
+  data.music = $("music").value;
+  data.musicVolume = Number($("music-volume").value) / 100;
+  if (data.video && data.formats.length === 0) {
+    return showStep("Xatolik", 0, "Kamida bitta video formatini tanlang.", true);
+  }
   $("submit").disabled = true;
   $("result").hidden = true;
   $("audio-result").hidden = true;

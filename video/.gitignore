@@ -9,3 +9,7 @@ out/
 .navoiy/
 # Reference voice recordings are personal data — not committed by default.
 tts/voices/*.wav
+# Generated voiceovers are outputs (like out/). Only the "namuna" sample is committed.
+public/voiceover/*
+!public/voiceover/.gitkeep
+!public/voiceover/namuna.*

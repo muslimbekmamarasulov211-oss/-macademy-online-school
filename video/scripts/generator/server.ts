@@ -30,7 +30,15 @@ import {
   validateName,
   type VoiceSettings,
 } from "../lib/pipeline";
-import { renderVoiceVideo } from "../lib/render";
+import {
+  FORMATS,
+  listMusic,
+  outputName,
+  renderVoiceVideo,
+  toVideoOptions,
+  type VideoFormat,
+  type VideoOptions,
+} from "../lib/render";
 
 const ROOT = process.cwd(); // npm scripts run from the video/ folder
 const HOST = "127.0.0.1";
@@ -46,6 +54,9 @@ type Job = {
   videoRequested: boolean;
   timing?: VoiceoverData["timing"];
   audioFile?: string; // e.g. "voiceover/dars-1.wav"
+  renderingFormat?: VideoFormat;
+  /** Finished videos: file name in out/ (without .mp4) + format. */
+  outputs: { file: string; format: VideoFormat; label: string }[];
   error?: string;
 };
 
@@ -116,7 +127,12 @@ const timestampName = () => {
   return `video-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 };
 
-const runJob = async (job: Job, settings: VoiceSettings, title: string | null) => {
+const runJob = async (
+  job: Job,
+  settings: VoiceSettings,
+  title: string | null,
+  video: VideoOptions,
+) => {
   try {
     const data = await generateVoiceover({
       root: ROOT,
@@ -137,8 +153,17 @@ const runJob = async (job: Job, settings: VoiceSettings, title: string | null) =
       root: ROOT,
       name: job.name,
       title,
-      onProgress: (p) => (job.progress = p),
+      ...video,
+      onProgress: (p, format) => {
+        job.progress = p;
+        job.renderingFormat = format;
+      },
     });
+    job.outputs = video.formats.map((format) => ({
+      file: outputName(job.name, format),
+      format,
+      label: FORMATS[format].label,
+    }));
     job.progress = 1;
     job.state = "done";
   } catch (err) {
@@ -170,8 +195,14 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
   if (text.length > MAX_TEXT_LENGTH)
     return send(res, 400, { error: `Max ${MAX_TEXT_LENGTH} characters.` });
   let settings: VoiceSettings;
+  let video: VideoOptions;
   try {
     validateName(name);
+    video = toVideoOptions(ROOT, {
+      formats: body.formats,
+      music: body.music,
+      musicVolume: body.musicVolume,
+    });
     settings = toVoiceSettings({
       engine: str(body.engine),
       voice: str(body.voice),
@@ -199,18 +230,31 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
     voiceProgress: 0,
     progress: 0,
     videoRequested,
+    outputs: [],
   };
   jobs.set(job.id, job);
   busy = true;
-  void runJob(job, settings, title);
+  void runJob(job, settings, title, video);
   send(res, 202, job);
 };
 
 const MEDIA = {
-  mp4: { dir: "out", type: "video/mp4" },
-  wav: { dir: path.join("public", "voiceover"), type: "audio/wav" },
-  mp3: { dir: path.join("public", "voiceover"), type: "audio/mpeg" },
+  mp4: { dir: "out", ext: "mp4", type: "video/mp4" },
+  wav: { dir: path.join("public", "voiceover"), ext: "wav", type: "audio/wav" },
+  mp3: { dir: path.join("public", "voiceover"), ext: "mp3", type: "audio/mpeg" },
+  music: { dir: path.join("public", "music"), ext: "mp3", type: "audio/mpeg" },
 } as const;
+
+/** URL → media file: /videos/<n>.mp4, /audio/<n>.wav|mp3 (voiceover), /music/<n>.mp3. */
+const matchMedia = (pathname: string): { name: string; kind: keyof typeof MEDIA } | null => {
+  let m = /^\/videos\/([^/]+)\.mp4$/.exec(pathname);
+  if (m) return { name: m[1], kind: "mp4" };
+  m = /^\/audio\/([^/]+)\.(wav|mp3)$/.exec(pathname);
+  if (m) return { name: m[1], kind: m[2] as "wav" | "mp3" };
+  m = /^\/music\/([^/]+)\.mp3$/.exec(pathname);
+  if (m) return { name: m[1], kind: "music" };
+  return null;
+};
 
 /** Serve out/<name>.mp4 or public/voiceover/<name>.wav|mp3 with HTTP Range support (Safari / iPad). */
 const serveMedia = async (
@@ -220,7 +264,7 @@ const serveMedia = async (
   ext: keyof typeof MEDIA,
 ) => {
   if (!NAME_RE.test(name)) return send(res, 404, { error: "Not found" });
-  const file = path.join(ROOT, MEDIA[ext].dir, `${name}.${ext}`);
+  const file = path.join(ROOT, MEDIA[ext].dir, `${name}.${MEDIA[ext].ext}`);
   let size: number;
   try {
     size = (await stat(file)).size;
@@ -233,7 +277,7 @@ const serveMedia = async (
     ...securityHeaders,
   };
   if (new URL(req.url ?? "/", "http://x").searchParams.has("download")) {
-    headers["Content-Disposition"] = `attachment; filename="${name}.${ext}"`;
+    headers["Content-Disposition"] = `attachment; filename="${name}.${MEDIA[ext].ext}"`;
   }
   const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? "");
   if (range && (range[1] || range[2])) {
@@ -291,6 +335,8 @@ const server = http.createServer(async (req, res) => {
         busy,
         emotions: Object.keys(EMOTIONS),
         referenceVoices: navoiyInstalled ? listReferenceVoices(ROOT) : [],
+        music: listMusic(ROOT),
+        formats: Object.entries(FORMATS).map(([id, f]) => ({ id, label: f.label, size: f.size })),
         videos: await listVideos(),
       });
     }
@@ -300,11 +346,9 @@ const server = http.createServer(async (req, res) => {
       const job = jobs.get(jobMatch[1]);
       return job ? send(res, 200, job) : send(res, 404, { error: "Not found" });
     }
-    const media =
-      /^\/videos\/([^/]+)\.(mp4)$/.exec(url.pathname) ??
-      /^\/audio\/([^/]+)\.(wav|mp3)$/.exec(url.pathname);
+    const media = matchMedia(url.pathname);
     if ((req.method === "GET" || req.method === "HEAD") && media)
-      return await serveMedia(req, res, media[1], media[2] as keyof typeof MEDIA);
+      return await serveMedia(req, res, media.name, media.kind);
     send(res, 404, { error: "Not found" });
   } catch (err) {
     send(res, 500, { error: (err as Error).message });

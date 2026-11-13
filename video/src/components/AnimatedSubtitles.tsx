@@ -17,13 +17,20 @@ type Props = {
   captions: Caption[];
   /** Distance from the bottom edge — keeps text above TikTok/Reels UI. */
   bottom?: number;
+  maxWidth?: number;
+  fontSize?: number;
 };
 
 /**
  * Word-by-word animated subtitles. Each word pops in exactly when it is spoken,
  * and the current word is highlighted in gold.
  */
-export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) => {
+export const AnimatedSubtitles: React.FC<Props> = ({
+  captions,
+  bottom = 380,
+  maxWidth = 940,
+  fontSize = 64,
+}) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const ms = (frame / fps) * 1000;
@@ -46,7 +53,7 @@ export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) =
     >
       <div
         style={{
-          maxWidth: 940,
+          maxWidth,
           padding: "28px 40px",
           borderRadius: 32,
           backgroundColor: `${colors.ink}cc`,
@@ -73,7 +80,7 @@ export const AnimatedSubtitles: React.FC<Props> = ({ captions, bottom = 380 }) =
               style={{
                 fontFamily: fonts.sans,
                 fontWeight: 800,
-                fontSize: 64,
+                fontSize,
                 lineHeight: 1.2,
                 color: isActive ? colors.gold400 : colors.white,
                 opacity: pop,

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   AbsoluteFill,
   type CalculateMetadataFunction,
@@ -11,6 +11,10 @@ import {
 import { AnimatedSubtitles } from "../components/AnimatedSubtitles";
 import { AudioLayer } from "../components/AudioLayer";
 import { Background } from "../components/Background";
+import { SentenceScenes } from "../components/SentenceScenes";
+import { VoiceVisualizer } from "../components/VoiceVisualizer";
+import { useLayout } from "../lib/layout";
+import { sentencesFromCaptions } from "../lib/sentences";
 import { colors, fonts } from "../theme";
 import type { VoiceoverData } from "../types";
 
@@ -19,7 +23,10 @@ export type VoiceVideoProps = {
   name: string;
   /** Optional big heading shown in the middle of the video. */
   title: string | null;
+  /** Background music inside public/, e.g. "music/ilhom.mp3", or null for none. */
   musicSrc: string | null;
+  /** Music volume when nobody speaks (0..1). It is lowered automatically under the voice. */
+  musicVolume: number;
   backgroundClipSrc: string | null;
   /** Filled in automatically by calculateMetadata — do not set by hand. */
   voiceover?: VoiceoverData;
@@ -45,14 +52,27 @@ export const calculateVoiceVideoMetadata: CalculateMetadataFunction<VoiceVideoPr
   };
 };
 
-const Header: React.FC<{ title: string | null }> = ({ title }) => {
+const Header: React.FC<{ title: string | null; titleUntilMs: number }> = ({
+  title,
+  titleUntilMs,
+}) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
+  const layout = useLayout();
   const enter = spring({ frame, fps, config: { damping: 16 } });
   const progress = interpolate(frame, [0, durationInFrames - 1], [0, 100]);
+  const titleOut = interpolate(
+    frame,
+    [(titleUntilMs / 1000) * fps - 8, (titleUntilMs / 1000) * fps],
+    [1, 0],
+    {
+      extrapolateLeft: "clamp",
+      extrapolateRight: "clamp",
+    },
+  );
 
   return (
-    <AbsoluteFill style={{ alignItems: "center" }}>
+    <AbsoluteFill style={{ alignItems: layout.isWide ? "flex-start" : "center" }}>
       {/* Thin progress bar at the very top. */}
       <div
         style={{
@@ -68,10 +88,11 @@ const Header: React.FC<{ title: string | null }> = ({ title }) => {
       </div>
       <div
         style={{
-          marginTop: 150,
+          marginTop: layout.logo.top,
+          marginLeft: layout.isWide ? 80 : 0,
           fontFamily: fonts.display,
           fontWeight: 700,
-          fontSize: 76,
+          fontSize: layout.logo.size,
           letterSpacing: 2,
           color: colors.white,
           opacity: enter,
@@ -79,51 +100,80 @@ const Header: React.FC<{ title: string | null }> = ({ title }) => {
       >
         M<span style={{ color: colors.gold400 }}>.</span>ACADEMY
       </div>
-      {title ? (
+      {title && titleOut > 0 ? (
         <div
           style={{
             position: "absolute",
-            top: 620,
-            maxWidth: 940,
-            textAlign: "center",
-            fontFamily: fonts.display,
-            fontWeight: 700,
-            fontSize: 110,
-            lineHeight: 1.05,
-            color: colors.white,
-            opacity: enter,
-            transform: `translateY(${(1 - enter) * 60}px)`,
+            left: 0,
+            right: 0,
+            top: layout.title.centerY - layout.title.size * 0.8,
+            display: "flex",
+            justifyContent: "center",
+            opacity: enter * titleOut,
+            transform: `translateY(${(1 - enter) * 60}px) scale(${0.9 + titleOut * 0.1})`,
           }}
         >
-          {title}
           <div
             style={{
-              width: 260,
-              height: 5,
-              borderRadius: 3,
-              backgroundColor: colors.gold400,
-              margin: "40px auto 0",
+              maxWidth: layout.title.maxWidth,
+              textAlign: "center",
+              fontFamily: fonts.display,
+              fontWeight: 700,
+              fontSize: layout.title.size,
+              // Cormorant uses old-style figures by default ("10" looks like "IO").
+              fontVariantNumeric: "lining-nums",
+              lineHeight: 1.05,
+              color: colors.white,
             }}
-          />
+          >
+            {title}
+            <div
+              style={{
+                width: 260,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: colors.gold400,
+                margin: "40px auto 0",
+              }}
+            />
+          </div>
         </div>
       ) : null}
     </AbsoluteFill>
   );
 };
 
+/** How long the title card stays before the first keyword appears. */
+const TITLE_MS = 2200;
+
 export const VoiceVideo: React.FC<VoiceVideoProps> = ({
   title,
   musicSrc,
+  musicVolume,
   backgroundClipSrc,
   voiceover,
 }) => {
+  const layout = useLayout();
+  const sentences = useMemo(
+    () => (voiceover ? sentencesFromCaptions(voiceover.captions) : []),
+    [voiceover],
+  );
   if (!voiceover) return null; // calculateMetadata always fills this in
+  const titleUntilMs = title ? Math.max(TITLE_MS, sentences[0]?.endMs ?? 0) : 0;
+
   return (
     <AbsoluteFill>
       <Background clipSrc={backgroundClipSrc} />
-      <Header title={title} />
-      <AnimatedSubtitles captions={voiceover.captions} />
-      <AudioLayer voiceoverSrc={voiceover.audioFile} musicSrc={musicSrc} />
+      <SentenceScenes sentences={sentences} hideBeforeMs={titleUntilMs} />
+      <Header title={title} titleUntilMs={titleUntilMs} />
+      <VoiceVisualizer src={voiceover.audioFile} {...layout.visualizer} />
+      <AnimatedSubtitles captions={voiceover.captions} {...layout.subtitles} />
+      <AudioLayer
+        voiceoverSrc={voiceover.audioFile}
+        musicSrc={musicSrc}
+        musicVolume={musicVolume}
+        speech={sentences}
+      />
     </AbsoluteFill>
   );
 };

@@ -104,6 +104,15 @@
         position: absolute;
         opacity: 0;
       }
+      .voice input[type="checkbox"]:not(:checked) + span {
+        opacity: 0.55;
+      }
+      #result video {
+        margin-top: 16px;
+      }
+      #result.both video.youtube {
+        max-height: none;
+      }
       .voice span {
         display: block;
         padding: 14px;
@@ -218,7 +227,9 @@
   <body>
     <main>
       <h1>M<span>.</span>ACADEMY — ovozli video</h1>
-      <p class="lead">Oʻzbekcha matn → AI ovoz (WAV/MP3) → sinxron subtitrlar → MP4 (1080×1920)</p>
+      <p class="lead">
+        Bitta tugma: oʻzbekcha matn → AI ovoz → animatsiya + subtitr + musiqa → MP4 (9:16 va 16:9)
+      </p>
 
       <form id="form" class="card" novalidate>
         <label for="text">Matn</label>
@@ -308,12 +319,50 @@
         </div>
 
         <label class="check" style="margin-top: 20px">
-          <input id="video" name="video" type="checkbox" checked />
+          <input id="video" type="checkbox" checked />
           Video ham yaratish (oʻchirilsa — faqat ovoz fayli)
         </label>
 
+        <div id="video-options">
+          <fieldset style="margin-top: 20px">
+            <legend>Video formati</legend>
+            <div class="voices">
+              <label class="voice"
+                ><input type="checkbox" name="formats" value="reels" checked /><span
+                  >9:16 Reels<small>Instagram · TikTok · Shorts</small></span
+                ></label
+              >
+              <label class="voice"
+                ><input type="checkbox" name="formats" value="youtube" checked /><span
+                  >16:9 YouTube<small>1920×1080</small></span
+                ></label
+              >
+            </div>
+          </fieldset>
+
+          <div class="row" style="margin-top: 20px">
+            <div>
+              <label for="music">Fon musiqasi</label>
+              <select id="music"></select>
+            </div>
+            <div>
+              <label for="music-volume"
+                >Musiqa balandligi: <span id="music-volume-value">18%</span></label
+              >
+              <input id="music-volume" type="range" min="0" max="40" step="2" value="18" />
+            </div>
+          </div>
+          <audio
+            id="music-preview"
+            controls
+            preload="none"
+            style="width: 100%; margin-top: 12px"
+          ></audio>
+          <div class="hint"><span>Ovoz gapirganda musiqa avtomatik pasayadi.</span></div>
+        </div>
+
         <p id="engine-warning" class="error" hidden></p>
-        <button id="submit" type="submit" style="margin-top: 16px">Yaratish</button>
+        <button id="submit" type="submit" style="margin-top: 16px">▶ Yaratish</button>
       </form>
 
       <section id="status" class="card" hidden aria-live="polite">
@@ -324,10 +373,7 @@
           <audio id="audio" controls style="width: 100%; margin-top: 12px"></audio>
           <a id="audio-download" class="download" href="#">⬇ Ovozni yuklab olish</a>
         </div>
-        <div id="result" hidden>
-          <video id="player" controls playsinline></video>
-          <a id="download" class="download" href="#">⬇ MP4 ni yuklab olish</a>
-        </div>
+        <div id="result" hidden></div>
       </section>
 
       <section class="card">

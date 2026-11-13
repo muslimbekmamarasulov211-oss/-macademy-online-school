@@ -17,8 +17,12 @@ type Props = {
 /** Animated navy background with drifting gold rings, or the user's own clip. */
 export const Background: React.FC<Props> = ({ clipSrc }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
+  const { durationInFrames, width, height } = useVideoConfig();
   const t = frame / durationInFrames;
+  // Ring centre: same as before for vertical videos, centred for landscape.
+  const isWide = width > height;
+  const cx = width / 2;
+  const cy = isWide ? height * 0.45 : 760;
 
   return (
     <AbsoluteFill style={{ backgroundColor: colors.ink }}>
@@ -55,8 +59,8 @@ export const Background: React.FC<Props> = ({ clipSrc }) => {
                 key={i}
                 style={{
                   position: "absolute",
-                  left: 540 - size / 2,
-                  top: 760 - size / 2,
+                  left: cx - size / 2,
+                  top: cy - size / 2,
                   width: size,
                   height: size,
                   borderRadius: "50%",

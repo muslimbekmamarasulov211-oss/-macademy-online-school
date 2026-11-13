@@ -1,12 +1,43 @@
 # M.ACADEMY Video Studio (Remotion)
 
 > **Tezkor boshlash (oʻzbekcha):** `npm install` → `npm run navoiy:setup` (bir marta) →
-> `npm run generator` → brauzerda http://localhost:3333 → matn yozing → **Yaratish**.
+> `npm run generator` → brauzerda http://localhost:3333 → matn yozing, format (9:16 / 16:9) va
+> musiqani tanlang → **▶ Yaratish**. Ovoz, animatsiya, subtitr, musiqa va MP4 — avtomatik.
 
 Vertical **1080×1920** Uzbek videos built with code:
 motion graphics, animated subtitles, AI voiceover, background music and your own clips.
 
 This folder is a separate project from the website (own `package.json`).
+
+## One button: text → finished videos
+
+```bash
+cd video
+npm install
+npm run navoiy:setup     # once: free local Uzbek TTS model (~10 GB disk)
+npm run generator        # → http://localhost:3333
+```
+
+On the page: type Uzbek text → choose emotion, formats (**9:16 Reels** and/or **16:9 YouTube**)
+and background music → press **▶ Yaratish**. Everything else is automatic:
+
+1. **Voice** — Navoiy TTS reads the text (or Azure, optional).
+2. **Subtitles** — synced to the voice, word by word highlight.
+3. **Motion graphics** — every spoken sentence starts a new scene: ring burst, kinetic keyword
+   (the sentence's longest word), sentence counter; gold bars react to the real voice volume.
+4. **Music** — original loops (`tinch`, `ilhom`, `energiya`) or your own MP3 in `public/music/`;
+   fades in/out and is lowered automatically while the voice speaks ("ducking").
+5. **Export** — `out/<name>-reels.mp4` (1080×1920) and `out/<name>-youtube.mp4` (1920×1080),
+   with preview and download links on the page.
+
+Same from the command line (reads `texts/<name>.txt`):
+
+```bash
+npm run make -- dars-1 --emotion xursand --title "Birinchi dars" --music ilhom --aspect both
+```
+
+`--aspect both|reels|youtube`, `--music ilhom|tinch|energiya|<your-file>|none`, `--music-volume 0.18`.
+Measured on a 4-core CPU without GPU: a 15-second text → both MP4s in about 2 minutes.
 
 ## Setup
 
@@ -174,16 +205,20 @@ video/
     ├── components/
     │   ├── Background.tsx           # animated navy/gold background OR your own clip
     │   ├── AnimatedSubtitles.tsx    # word-by-word animated subtitles
-    │   └── AudioLayer.tsx           # voiceover + music (auto fade in/out, ducked volume)
+    │   ├── SentenceScenes.tsx       # per-sentence motion graphics (keyword, ring burst, counter)
+    │   ├── VoiceVisualizer.tsx      # bars driven by the real voice audio
+    │   └── AudioLayer.tsx           # voiceover + music (fade in/out, ducking under the voice)
+    ├── lib/                         # layout (9:16 / 16:9), sentence timings, music volume
     └── compositions/
         ├── TestVideo.tsx            # the 10-second test video
-        └── VoiceVideo.tsx           # voiceover video (length = voice length)
+        └── VoiceVideo.tsx           # voiceover video, compositions VoiceVideo (9:16) + VoiceVideoWide (16:9)
 texts/                               # your Uzbek scripts (<name>.txt)
 tts/                                 # Navoiy TTS: setup.sh, Python worker, model download, voices/
 scripts/
 ├── generator/                       # local web page: text box + voice selection (npm run generator)
 ├── voice.ts                         # text → voice (Navoiy or Azure) + timings + subtitle lines
-├── make.ts                          # voice + render in one command
+├── make.ts                          # voice + render (both formats) in one command
+├── music/generate.ts                # original background-music synthesizer (npm run music:generate)
 ├── check-env.ts                     # shows whether Azure settings are set (never the values)
 └── lib/                             # Azure client, env handling, pipeline, render, captions (+ tests)
 ```
