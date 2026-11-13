@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# html-3d-video skill — renders, stills and drafts (never committed)
+/.video-renders/
