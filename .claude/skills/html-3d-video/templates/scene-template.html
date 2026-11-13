@@ -1,0 +1,543 @@
+<!doctype html>
+<!--
+  html-3d-video — scene template.
+  Copy this file, keep the RENDER CONTRACT block, replace the SCENE CONTENT.
+
+  Open the file in a browser to preview in real time (Space = pause, ←/→ = seek ±1 s).
+  Render to MP4:  node .claude/skills/html-3d-video/scripts/render.mjs scene.html out.mp4
+-->
+<html lang="uz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Scene</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600&display=block"
+      rel="stylesheet"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --navy-950: #050b18;
+        --navy-900: #0a1630;
+        --gold-300: #f3d68a;
+        --gold-400: #e6be5a;
+        --gold-500: #d4a437;
+        --ivory: #f6f1e6;
+        --muted: #a9b3c7;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      /* Fixed 1920×1080 stage; scaled to fit only in live preview. */
+      #stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--navy-950);
+        transform-origin: 0 0;
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--ivory);
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+      }
+      .layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      /* ---- typography ---- */
+      .eyebrow {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 390px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: 0.6em;
+        text-transform: uppercase;
+        color: var(--gold-300);
+      }
+      .title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 432px;
+        display: flex;
+        justify-content: center;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 196px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.04em;
+      }
+      .title span {
+        display: inline-block;
+        will-change: transform, opacity;
+        background: linear-gradient(180deg, #fff6dc 10%, var(--gold-400) 55%, #9c7424 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .rule {
+        position: absolute;
+        left: 50%;
+        top: 676px;
+        width: 520px;
+        height: 2px;
+        margin-left: -260px;
+        background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+        transform-origin: 50% 50%;
+      }
+      .subtitle {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 708px;
+        text-align: center;
+        font-size: 34px;
+        font-weight: 300;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .outro {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 470px;
+        text-align: center;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 92px;
+        font-weight: 500;
+        font-style: italic;
+        color: var(--ivory);
+      }
+      /* ---- finishing: vignette, grain, fade ---- */
+      .vignette {
+        background: radial-gradient(
+          ellipse at 50% 50%,
+          transparent 45%,
+          rgba(2, 5, 12, 0.55) 80%,
+          rgba(0, 0, 0, 0.9) 100%
+        );
+      }
+      .grain {
+        inset: -64px;
+        opacity: 0.07;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='256' height='256'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+      .fade {
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="gl" width="1920" height="1080"></canvas>
+      <div class="layer" id="text">
+        <div class="eyebrow" id="eyebrow">Online maktab</div>
+        <div class="title" id="title"></div>
+        <div class="rule" id="rule"></div>
+        <div class="subtitle" id="subtitle">Bilim · Intizom · Natija</div>
+        <div class="outro" id="outro">Kelajak bugundan boshlanadi</div>
+      </div>
+      <div class="layer vignette"></div>
+      <div class="layer grain" id="grain"></div>
+      <div class="layer fade" id="fade"></div>
+    </div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+      import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+      import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+      import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+      import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+      import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+
+      // ================================================================ RENDER CONTRACT
+      const W = 1920;
+      const H = 1080;
+      window.SCENE = { duration: 12, fps: 30, width: W, height: H };
+      // --scale (e.g. 0.5 for drafts): GL renders at W*S × H*S, the DOM stage is zoomed by S.
+      const S = window.__RENDER_SCALE__ ?? 1;
+
+      // ---------- deterministic helpers (never use Math.random / Date.now) ----------
+      const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+      const mix = (a, b, p) => a + (b - a) * p;
+      const ease = {
+        linear: (x) => x,
+        inOutSine: (x) => -(Math.cos(Math.PI * x) - 1) / 2,
+        outCubic: (x) => 1 - Math.pow(1 - x, 3),
+        inOutCubic: (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2),
+        outExpo: (x) => (x === 1 ? 1 : 1 - Math.pow(2, -10 * x)),
+        inOutExpo: (x) =>
+          x === 0 || x === 1
+            ? x
+            : x < 0.5
+              ? Math.pow(2, 20 * x - 10) / 2
+              : (2 - Math.pow(2, -20 * x + 10)) / 2,
+        outBack: (x) => 1 + 2.70158 * Math.pow(x - 1, 3) + 1.70158 * Math.pow(x - 1, 2),
+      };
+      /** 0→1 progress of a segment that starts at `start` and lasts `dur` seconds. */
+      const seg = (t, start, dur, e = ease.outCubic) => e(clamp((t - start) / dur));
+      /** Fade-in then fade-out envelope. */
+      const envelope = (t, inAt, inDur, outAt, outDur) =>
+        seg(t, inAt, inDur) * (1 - seg(t, outAt, outDur, ease.inOutCubic));
+      function mulberry32(seed) {
+        return () => {
+          seed |= 0;
+          seed = (seed + 0x6d2b79f5) | 0;
+          let r = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+          r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+          return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+      const rand = mulberry32(20261113);
+
+      // ================================================================ SCENE CONTENT
+      // ---------- renderer ----------
+      const canvas = document.getElementById("gl");
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        preserveDrawingBuffer: true, // required: the renderer screenshots the canvas
+        powerPreference: "high-performance",
+      });
+      renderer.setPixelRatio(1);
+      renderer.setSize(W * S, H * S, false);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#050b18");
+      scene.fog = new THREE.FogExp2("#050b18", 0.035);
+
+      // Image-based lighting: physically correct reflections without external HDR files.
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.55;
+
+      const camera = new THREE.PerspectiveCamera(35, W / H, 0.1, 200);
+
+      // ---------- lights ----------
+      scene.add(new THREE.HemisphereLight("#9fb4ff", "#0a1630", 0.35));
+      const key = new THREE.DirectionalLight("#fff1d0", 2.4);
+      key.position.set(6, 9, 7);
+      key.castShadow = true;
+      key.shadow.mapSize.set(2048, 2048);
+      key.shadow.radius = 6;
+      key.shadow.camera.left = -10;
+      key.shadow.camera.right = 10;
+      key.shadow.camera.top = 10;
+      key.shadow.camera.bottom = -10;
+      scene.add(key);
+      const rim = new THREE.PointLight("#5b7cff", 60, 30, 2);
+      rim.position.set(-7, 3, -6);
+      scene.add(rim);
+      const sweep = new THREE.SpotLight("#ffd27a", 0, 40, Math.PI / 7, 0.6, 1.5);
+      sweep.position.set(0, 10, 6);
+      scene.add(sweep, sweep.target);
+
+      // ---------- materials ----------
+      const gold = new THREE.MeshPhysicalMaterial({
+        color: "#d9a93c",
+        metalness: 1,
+        roughness: 0.32,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.15,
+        flatShading: true,
+      });
+      const goldSmooth = gold.clone();
+      goldSmooth.flatShading = false;
+      const glass = new THREE.MeshPhysicalMaterial({
+        color: "#cfe0ff",
+        metalness: 0,
+        roughness: 0.05,
+        transmission: 1,
+        thickness: 1.2,
+        ior: 1.5,
+        iridescence: 0.4,
+      });
+      const navyMetal = new THREE.MeshPhysicalMaterial({
+        color: "#2a4180",
+        metalness: 0.9,
+        roughness: 0.28,
+        clearcoat: 1,
+        clearcoatRoughness: 0.1,
+      });
+
+      // ---------- hero: faceted gem + orbiting rings ----------
+      const hero = new THREE.Group();
+      scene.add(hero);
+      const gem = new THREE.Mesh(new THREE.IcosahedronGeometry(1.35, 1), gold);
+      gem.castShadow = true;
+      hero.add(gem);
+      const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62, 4), glass);
+      hero.add(core);
+
+      const rings = [];
+      for (let i = 0; i < 3; i++) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(2.1 + i * 0.42, 0.018 + i * 0.006, 24, 256),
+          goldSmooth,
+        );
+        ring.rotation.set(Math.PI / 2 + (i - 1) * 0.45, (i - 1) * 0.3, 0);
+        ring.castShadow = true;
+        hero.add(ring);
+        rings.push(ring);
+      }
+
+      // ---------- satellites: cube, torus knot, sphere ----------
+      const satellites = [
+        new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.9, 0.9, 6, 0.08), navyMetal),
+        new THREE.Mesh(new THREE.TorusKnotGeometry(0.42, 0.14, 220, 32), goldSmooth),
+        new THREE.Mesh(new THREE.SphereGeometry(0.5, 64, 64), glass),
+      ];
+      satellites.forEach((m) => {
+        m.castShadow = true;
+        scene.add(m);
+      });
+
+      // ---------- floor (shadow catcher) ----------
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 60),
+        new THREE.ShadowMaterial({ color: "#000000", opacity: 0.45 }),
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -2.4;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // ---------- particles (deterministic) ----------
+      const PCOUNT = 1400;
+      const pBase = new Float32Array(PCOUNT * 3);
+      const pPhase = new Float32Array(PCOUNT);
+      for (let i = 0; i < PCOUNT; i++) {
+        const r = 4 + rand() * 16;
+        const th = rand() * Math.PI * 2;
+        pBase[i * 3] = Math.cos(th) * r;
+        pBase[i * 3 + 1] = (rand() - 0.5) * 12;
+        pBase[i * 3 + 2] = Math.sin(th) * r - 4;
+        pPhase[i] = rand() * Math.PI * 2;
+      }
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(PCOUNT * 3);
+      pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+      const dot = (() => {
+        const c = document.createElement("canvas");
+        c.width = c.height = 64;
+        const g = c.getContext("2d");
+        const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+        grd.addColorStop(0, "rgba(255,240,200,1)");
+        grd.addColorStop(0.35, "rgba(240,200,110,0.55)");
+        grd.addColorStop(1, "rgba(240,200,110,0)");
+        g.fillStyle = grd;
+        g.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(c);
+      })();
+      const particles = new THREE.Points(
+        pGeo,
+        new THREE.PointsMaterial({
+          size: 0.09,
+          map: dot,
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          color: "#ffd98a",
+        }),
+      );
+      scene.add(particles);
+
+      // ---------- post-processing ----------
+      const rt = new THREE.WebGLRenderTarget(W * S, H * S, {
+        type: THREE.HalfFloatType,
+        samples: 4,
+      });
+      const composer = new EffectComposer(renderer, rt);
+      composer.setPixelRatio(1);
+      composer.setSize(W * S, H * S);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloom = new UnrealBloomPass(new THREE.Vector2(W * S, H * S), 0.5, 0.6, 0.86);
+      composer.addPass(bloom);
+      composer.addPass(new OutputPass());
+
+      // ---------- DOM text ----------
+      const titleEl = document.getElementById("title");
+      const letters = [..."M.ACADEMY"].map((ch) => {
+        const s = document.createElement("span");
+        s.textContent = ch;
+        titleEl.appendChild(s);
+        return s;
+      });
+      const $ = (id) => document.getElementById(id);
+      const set = (el, opacity, transform = "none") => {
+        el.style.opacity = opacity.toFixed(4);
+        el.style.transform = transform;
+      };
+
+      // ================================================================ TIMELINE
+      // 0.0–3.0  gem assembles, camera dolly-in
+      // 3.0–7.0  gem slides back, title + subtitle reveal, satellites arrive
+      // 7.0–10.0 orbit, light sweep across the gold
+      // 10.0–12  text out, outro line, fade to black
+      window.renderFrame = (t) => {
+        // --- camera: dolly + slow orbit, all eased ---
+        const dolly = seg(t, 0, 3.2, ease.inOutCubic);
+        const orbit = mix(-0.35, 0.55, seg(t, 0, 12, ease.inOutSine));
+        const radius = mix(15, 10.5, dolly) + seg(t, 9.8, 2.2, ease.inOutCubic) * 1.5;
+        camera.position.set(
+          Math.sin(orbit) * radius,
+          mix(3.2, 1.2, dolly),
+          Math.cos(orbit) * radius,
+        );
+        camera.lookAt(0, mix(0.4, 0, dolly), 0);
+
+        // --- hero gem ---
+        const build = seg(t, 0.2, 1.8, ease.outBack);
+        const recede = seg(t, 3, 1.4, ease.inOutCubic);
+        hero.scale.setScalar(Math.max(0.0001, build * mix(1, 0.62, recede)));
+        hero.position.set(0, mix(0, 2.15, recede), mix(0, -3.5, recede));
+        gem.rotation.set(t * 0.35, t * 0.6, 0);
+        core.rotation.set(-t * 0.5, -t * 0.8, 0);
+        rings.forEach((ring, i) => {
+          const appear = seg(t, 0.6 + i * 0.25, 1.4, ease.outExpo);
+          ring.scale.setScalar(Math.max(0.0001, appear));
+          ring.rotation.z = t * (0.4 + i * 0.22) * (i % 2 ? -1 : 1);
+        });
+
+        // --- satellites: fly in on arcs, then float ---
+        satellites.forEach((m, i) => {
+          const arrive = seg(t, 4.2 + i * 0.35, 1.6, ease.outCubic);
+          const leave = seg(t, 10, 1.4, ease.inOutCubic);
+          const angle = (i - 1) * 0.9 + mix(2.4, 0, arrive) + t * 0.12;
+          const r = mix(9, 4.2, arrive);
+          m.position.set(
+            Math.sin(angle) * r,
+            -1.5 + Math.sin(t * 1.3 + i * 2) * 0.18 - leave * 6,
+            Math.cos(angle) * r * 0.55 + 1.2,
+          );
+          m.rotation.set(t * (0.5 + i * 0.2), t * (0.7 - i * 0.15), 0);
+          m.scale.setScalar(Math.max(0.0001, arrive * (1 - leave)));
+        });
+
+        // --- light sweep ---
+        const sw = seg(t, 7, 3, ease.inOutSine);
+        sweep.intensity = Math.sin(sw * Math.PI) * 220;
+        sweep.target.position.set(mix(-6, 6, sw), 0, 0);
+        bloom.strength = 0.55 + Math.sin(sw * Math.PI) * 0.35 + seg(t, 10.6, 0.6) * 0.6;
+
+        // --- particles drift (closed-form, so any t is exact) ---
+        for (let i = 0; i < PCOUNT; i++) {
+          const ph = pPhase[i];
+          pPos[i * 3] = pBase[i * 3] + Math.sin(t * 0.3 + ph) * 0.35;
+          pPos[i * 3 + 1] = pBase[i * 3 + 1] + Math.sin(t * 0.45 + ph * 1.7) * 0.5;
+          pPos[i * 3 + 2] = pBase[i * 3 + 2] + Math.cos(t * 0.25 + ph) * 0.35;
+        }
+        pGeo.attributes.position.needsUpdate = true;
+        particles.rotation.y = t * 0.03;
+        particles.material.opacity = seg(t, 0, 1.5);
+
+        // --- typography ---
+        const textOut = seg(t, 9.8, 0.9, ease.inOutCubic);
+        set(
+          $("eyebrow"),
+          seg(t, 3.4, 0.9) * (1 - textOut),
+          `translateY(${mix(18, 0, seg(t, 3.4, 0.9))}px)`,
+        );
+        letters.forEach((el, i) => {
+          const p = seg(t, 3.6 + i * 0.07, 1.1, ease.outExpo);
+          set(
+            el,
+            p * (1 - textOut),
+            `translateY(${mix(90, 0, p) - textOut * 30}px) rotateX(${mix(-70, 0, p)}deg)`,
+          );
+        });
+        set($("rule"), 1 - textOut, `scaleX(${seg(t, 4.5, 1.2, ease.inOutExpo)})`);
+        set(
+          $("subtitle"),
+          seg(t, 4.9, 1) * (1 - textOut),
+          `translateY(${mix(14, 0, seg(t, 4.9, 1))}px)`,
+        );
+        const outro = envelope(t, 10.4, 1, 11.4, 0.6);
+        set($("outro"), outro, `translateY(${mix(20, 0, seg(t, 10.4, 1))}px)`);
+
+        // --- finishing ---
+        const grainRand = mulberry32(Math.floor(t * 24) + 7); // grain changes at 24 fps
+        $("grain").style.transform =
+          `translate(${(grainRand() * 64 - 32).toFixed(1)}px, ${(grainRand() * 64 - 32).toFixed(1)}px)`;
+        $("fade").style.opacity = (
+          1 -
+          seg(t, 0, 0.8, ease.inOutSine) +
+          seg(t, 11.3, 0.7, ease.inOutSine)
+        ).toFixed(4);
+
+        composer.render();
+      };
+
+      // Fonts + shader compilation done before the first frame is captured.
+      window.sceneReady = (async () => {
+        await document.fonts.ready;
+        renderer.compile(scene, camera);
+        window.renderFrame(0);
+      })();
+
+      // ================================================================ STAGE SCALING
+      if (window.__RENDER_MODE__) {
+        document.getElementById("stage").style.transform = `scale(${S})`;
+      } else {
+        const stage = document.getElementById("stage");
+        const fit = () => {
+          const s = Math.min(innerWidth / W, innerHeight / H);
+          stage.style.transform = `translate(${(innerWidth - W * s) / 2}px, ${(innerHeight - H * s) / 2}px) scale(${s})`;
+        };
+        addEventListener("resize", fit);
+        fit();
+        let time = 0;
+        let playing = true;
+        let last = performance.now();
+        addEventListener("keydown", (e) => {
+          if (e.code === "Space") playing = !playing;
+          if (e.code === "ArrowRight") time = Math.min(SCENE.duration, time + 1);
+          if (e.code === "ArrowLeft") time = Math.max(0, time - 1);
+        });
+        const loop = (now) => {
+          if (playing) time = (time + (now - last) / 1000) % SCENE.duration;
+          last = now;
+          window.renderFrame(time);
+          requestAnimationFrame(loop);
+        };
+        window.sceneReady.then(() => requestAnimationFrame(loop));
+      }
+    </script>
+  </body>
+</html>
