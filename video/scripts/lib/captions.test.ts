@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { alignWords, estimateWords, groupIntoCaptions, type Boundary } from "./captions";
-import { toDisplayText, toSpeechText } from "./uzbek-text";
+import {
+  alignWords,
+  estimateWords,
+  groupIntoCaptions,
+  wordsFromSentenceSegments,
+  type Boundary,
+} from "./captions";
+import { splitSentences, toDisplayText, toSpeechText } from "./uzbek-text";
 
 test("toDisplayText uses ʻ after o/g and ʼ elsewhere", () => {
   assert.equal(toDisplayText("O'zbek g`alaba ta'lim sun’iy"), "Oʻzbek gʻalaba taʼlim sunʼiy");
@@ -56,4 +62,40 @@ test("groupIntoCaptions breaks at sentence ends and keeps lines short", () => {
     assert.ok(c.startMs < c.endMs);
   }
   assert.equal(caps.map((c) => c.text).join(" "), words.map((w) => w.text).join(" "));
+});
+
+test("splitSentences splits on sentence ends and keeps punctuation", () => {
+  assert.deepEqual(splitSentences("Salom! Bugun dars bor.\nSiz tayyormisiz?"), [
+    "Salom!",
+    "Bugun dars bor.",
+    "Siz tayyormisiz?",
+  ]);
+  assert.deepEqual(splitSentences("Oxirida nuqta yoʻq"), ["Oxirida nuqta yoʻq"]);
+  assert.deepEqual(splitSentences("M.ACADEMY maktabi. Narx 3.5 mln."), [
+    "M.ACADEMY maktabi.",
+    "Narx 3.5 mln.",
+  ]);
+});
+
+test("splitSentences breaks very long sentences at commas", () => {
+  const long = Array.from({ length: 30 }, (_, i) => `qism${i} soʻz soʻz`).join(", ") + ".";
+  const parts = splitSentences(long);
+  assert.ok(parts.length > 1);
+  for (const p of parts) assert.ok(p.length <= 220);
+  assert.equal(parts.join(" "), long);
+});
+
+test("wordsFromSentenceSegments keeps every word inside its sentence span", () => {
+  const words = wordsFromSentenceSegments(
+    ["Salom dunyo!", "Yaxshi dars."],
+    [
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1250, endMs: 2500 },
+    ],
+  );
+  assert.equal(words.length, 4);
+  assert.equal(words[0].startMs, 0);
+  assert.equal(words[1].endMs, 1000);
+  assert.equal(words[2].startMs, 1250);
+  assert.equal(words[3].endMs, 2500);
 });

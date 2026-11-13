@@ -5,3 +5,7 @@ out/
 .env
 .env.*
 !.env.example
+# Navoiy TTS local runtime: Python venv, CosyVoice checkout, model weights (~8 GB)
+.navoiy/
+# Reference voice recordings are personal data — not committed by default.
+tts/voices/*.wav

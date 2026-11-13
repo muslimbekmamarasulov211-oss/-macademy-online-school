@@ -18,11 +18,17 @@ export type Caption = {
 export type VoiceoverData = {
   name: string;
   text: string;
+  /** "navoiy" = free local model, "azure" = Azure AI Speech. Older files have no engine. */
+  engine?: "navoiy" | "azure";
   voice: string;
-  /** Path inside public/, e.g. "voiceover/salom.mp3". */
+  /** Path inside public/, e.g. "voiceover/salom.wav" or "voiceover/salom.mp3". */
   audioFile: string;
   durationMs: number;
-  /** "word-boundary" = exact timings from Azure, "estimated" = fallback by word length. */
-  timing: "word-boundary" | "estimated";
+  /**
+   * "word-boundary" = exact per-word timings (Azure),
+   * "sentence" = exact per-sentence timings, words spread inside each sentence (Navoiy),
+   * "estimated" = whole text spread by word length (fallback).
+   */
+  timing: "word-boundary" | "sentence" | "estimated";
   captions: Caption[];
 };

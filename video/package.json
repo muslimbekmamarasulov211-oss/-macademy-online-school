@@ -6,6 +6,7 @@
   "scripts": {
     "studio": "remotion studio",
     "generator": "tsx --env-file-if-exists=.env scripts/generator/server.ts",
+    "navoiy:setup": "bash tts/setup.sh",
     "voice": "tsx --env-file-if-exists=.env scripts/voice.ts",
     "make": "tsx --env-file-if-exists=.env scripts/make.ts",
     "check-env": "tsx --env-file-if-exists=.env scripts/check-env.ts",

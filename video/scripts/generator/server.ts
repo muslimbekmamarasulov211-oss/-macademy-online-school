@@ -12,14 +12,23 @@ import { createReadStream } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
-import type { VoiceKey } from "../lib/azure-tts";
+import type { VoiceoverData } from "../../src/types";
 import { checkEnvFileSafety, describeSpeechEnv, loadSpeechEnv } from "../lib/env";
+import {
+  EMOTIONS,
+  isNavoiyInstalled,
+  listReferenceVoices,
+  NavoiyWorker,
+  resolveReference,
+} from "../lib/navoiy-tts";
 import {
   generateVoiceover,
   MAX_TEXT_LENGTH,
   NAME_RE,
   saveText,
-  validateOptions,
+  toVoiceSettings,
+  validateName,
+  type VoiceSettings,
 } from "../lib/pipeline";
 import { renderVoiceVideo } from "../lib/render";
 
@@ -32,13 +41,27 @@ type Job = {
   id: string;
   name: string;
   state: "voice" | "render" | "done" | "error";
+  voiceProgress: number; // 0..1 of the voice step
   progress: number; // 0..1 of the render step
-  timing?: "word-boundary" | "estimated";
+  videoRequested: boolean;
+  timing?: VoiceoverData["timing"];
+  audioFile?: string; // e.g. "voiceover/dars-1.wav"
   error?: string;
 };
 
 const jobs = new Map<string, Job>();
 let busy = false;
+// One Navoiy worker for the whole server: the model is loaded once and reused.
+const navoiy = new NavoiyWorker(ROOT);
+
+const isAzureConfigured = () => {
+  try {
+    loadSpeechEnv();
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const send = (res: http.ServerResponse, status: number, body: unknown) => {
   res.writeHead(status, {
@@ -93,10 +116,22 @@ const timestampName = () => {
   return `video-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 };
 
-const runJob = async (job: Job, voice: VoiceKey, rate: number, title: string | null) => {
+const runJob = async (job: Job, settings: VoiceSettings, title: string | null) => {
   try {
-    const data = await generateVoiceover({ root: ROOT, name: job.name, voice, rate });
+    const data = await generateVoiceover({
+      root: ROOT,
+      name: job.name,
+      settings,
+      navoiy,
+      onProgress: (p) => (job.voiceProgress = p),
+    });
+    job.voiceProgress = 1;
     job.timing = data.timing;
+    job.audioFile = data.audioFile;
+    if (!job.videoRequested) {
+      job.state = "done";
+      return;
+    }
     job.state = "render";
     await renderVoiceVideo({
       root: ROOT,
@@ -121,8 +156,8 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
 
   const body = (await readJsonBody(req)) as Record<string, unknown>;
   const text = typeof body.text === "string" ? body.text : "";
-  const voice = String(body.voice ?? "madina") as VoiceKey;
-  const rate = Number(body.rate ?? 0);
+  const videoRequested = body.video !== false;
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
   const title =
     typeof body.title === "string" && body.title.trim() ? body.title.trim().slice(0, 80) : null;
   const name =
@@ -134,25 +169,58 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
     return send(res, 400, { error: "Matn kiriting (enter some text)." });
   if (text.length > MAX_TEXT_LENGTH)
     return send(res, 400, { error: `Max ${MAX_TEXT_LENGTH} characters.` });
+  let settings: VoiceSettings;
   try {
-    validateOptions({ name, voice, rate });
-    loadSpeechEnv(); // fail fast with a clear message if the key is not configured
+    validateName(name);
+    settings = toVoiceSettings({
+      engine: str(body.engine),
+      voice: str(body.voice),
+      emotion: str(body.emotion),
+      reference: str(body.reference),
+      rate: Number(body.rate ?? 0),
+      format: str(body.format),
+    });
+    // Fail fast with a clear message if the chosen engine is not ready.
+    if (settings.engine === "azure") loadSpeechEnv();
+    else {
+      if (!isNavoiyInstalled(ROOT))
+        throw new Error("Navoiy TTS oʻrnatilmagan. Run: npm run navoiy:setup");
+      resolveReference(ROOT, settings.reference);
+    }
   } catch (err) {
     return send(res, 400, { error: (err as Error).message });
   }
 
   await saveText(ROOT, name, text);
-  const job: Job = { id: crypto.randomUUID(), name, state: "voice", progress: 0 };
+  const job: Job = {
+    id: crypto.randomUUID(),
+    name,
+    state: "voice",
+    voiceProgress: 0,
+    progress: 0,
+    videoRequested,
+  };
   jobs.set(job.id, job);
   busy = true;
-  void runJob(job, voice, rate, title);
+  void runJob(job, settings, title);
   send(res, 202, job);
 };
 
-/** Serve out/<name>.mp4 with HTTP Range support (required by Safari / iPad video). */
-const serveVideo = async (req: http.IncomingMessage, res: http.ServerResponse, name: string) => {
+const MEDIA = {
+  mp4: { dir: "out", type: "video/mp4" },
+  wav: { dir: path.join("public", "voiceover"), type: "audio/wav" },
+  mp3: { dir: path.join("public", "voiceover"), type: "audio/mpeg" },
+} as const;
+
+/** Serve out/<name>.mp4 or public/voiceover/<name>.wav|mp3 with HTTP Range support (Safari / iPad). */
+const serveMedia = async (
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  name: string,
+  ext: keyof typeof MEDIA,
+) => {
   if (!NAME_RE.test(name)) return send(res, 404, { error: "Not found" });
-  const file = path.join(ROOT, "out", `${name}.mp4`);
+  const file = path.join(ROOT, MEDIA[ext].dir, `${name}.${ext}`);
   let size: number;
   try {
     size = (await stat(file)).size;
@@ -160,12 +228,12 @@ const serveVideo = async (req: http.IncomingMessage, res: http.ServerResponse, n
     return send(res, 404, { error: "Not found" });
   }
   const headers: http.OutgoingHttpHeaders = {
-    "Content-Type": "video/mp4",
+    "Content-Type": MEDIA[ext].type,
     "Accept-Ranges": "bytes",
     ...securityHeaders,
   };
   if (new URL(req.url ?? "/", "http://x").searchParams.has("download")) {
-    headers["Content-Disposition"] = `attachment; filename="${name}.mp4"`;
+    headers["Content-Disposition"] = `attachment; filename="${name}.${ext}"`;
   }
   const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? "");
   if (range && (range[1] || range[2])) {
@@ -216,13 +284,15 @@ const server = http.createServer(async (req, res) => {
       return res.end(await readFile(path.join(STATIC_DIR, file)));
     }
     if (req.method === "GET" && url.pathname === "/api/status") {
-      let configured = true;
-      try {
-        loadSpeechEnv();
-      } catch {
-        configured = false;
-      }
-      return send(res, 200, { configured, busy, videos: await listVideos() });
+      const navoiyInstalled = isNavoiyInstalled(ROOT);
+      return send(res, 200, {
+        navoiyInstalled,
+        azureConfigured: isAzureConfigured(),
+        busy,
+        emotions: Object.keys(EMOTIONS),
+        referenceVoices: navoiyInstalled ? listReferenceVoices(ROOT) : [],
+        videos: await listVideos(),
+      });
     }
     if (req.method === "POST" && url.pathname === "/api/jobs") return await createJob(req, res);
     const jobMatch = /^\/api\/jobs\/([0-9a-f-]{36})$/.exec(url.pathname);
@@ -230,9 +300,11 @@ const server = http.createServer(async (req, res) => {
       const job = jobs.get(jobMatch[1]);
       return job ? send(res, 200, job) : send(res, 404, { error: "Not found" });
     }
-    const videoMatch = /^\/videos\/([^/]+)\.mp4$/.exec(url.pathname);
-    if ((req.method === "GET" || req.method === "HEAD") && videoMatch)
-      return await serveVideo(req, res, videoMatch[1]);
+    const media =
+      /^\/videos\/([^/]+)\.(mp4)$/.exec(url.pathname) ??
+      /^\/audio\/([^/]+)\.(wav|mp3)$/.exec(url.pathname);
+    if ((req.method === "GET" || req.method === "HEAD") && media)
+      return await serveMedia(req, res, media[1], media[2] as keyof typeof MEDIA);
     send(res, 404, { error: "Not found" });
   } catch (err) {
     send(res, 500, { error: (err as Error).message });
@@ -240,7 +312,13 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log("Azure Speech settings:");
+  if (isNavoiyInstalled(ROOT)) {
+    console.log("Navoiy TTS: installed — loading the model in the background…");
+    navoiy.start().catch((err: Error) => console.error(`❌ ${err.message}`));
+  } else {
+    console.log("Navoiy TTS: not installed (run: npm run navoiy:setup)");
+  }
+  console.log("Azure Speech settings (optional):");
   for (const line of describeSpeechEnv()) console.log(`  ${line}`);
   for (const w of checkEnvFileSafety(ROOT)) console.warn(`⚠️  ${w}`);
   console.log(`\n🎙  Uzbek video generator: http://localhost:${PORT}\n`);

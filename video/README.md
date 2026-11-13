@@ -1,5 +1,8 @@
 # M.ACADEMY Video Studio (Remotion)
 
+> **Tezkor boshlash (oʻzbekcha):** `npm install` → `npm run navoiy:setup` (bir marta) →
+> `npm run generator` → brauzerda http://localhost:3333 → matn yozing → **Yaratish**.
+
 Vertical **1080×1920** Uzbek videos built with code:
 motion graphics, animated subtitles, AI voiceover, background music and your own clips.
 
@@ -15,7 +18,61 @@ npm run render:test   # renders out/test-video.mp4
 npm test              # unit tests for Uzbek text + subtitle timing
 ```
 
-## Uzbek AI voiceover → synced subtitles → MP4
+## Navoiy TTS — free local Uzbek voice (default engine)
+
+[Navoiy TTS](https://huggingface.co/aisha-org/navoiy-tts) by Aisha is an open Uzbek
+text-to-speech model (Apache-2.0) built on CosyVoice2. It runs **on your own machine**:
+no API key, no per-use cost. It supports 10 emotions and copies the timbre of a short
+reference recording. See `tts/NOTICE.md` for sources and licences.
+
+### Install (once)
+
+```bash
+cd video
+npm run navoiy:setup
+```
+
+Needs `git`, Python 3.10/3.11 and ~10 GB disk. Downloads the CosyVoice code (pinned
+commit), CPU PyTorch + packages (~2 GB) and the models (~5.7 GB, checksum-verified) into
+`video/.navoiy/` (git-ignored). Re-running skips what is already installed.
+
+### Use
+
+- **Generator page:** `npm run generator` → http://localhost:3333 → choose **Navoiy TTS**,
+  an emotion (*Kayfiyat*), a reference voice (*Namuna ovoz*), WAV or MP3, then **Yaratish**.
+  Untick *Video ham yaratish* to make only the audio file.
+- **Command line:**
+
+```bash
+npm run make -- dars-1 --engine navoiy --emotion xursand --format mp3 --title "Birinchi dars"
+```
+
+Emotions: `xotirjam` (default), `xursand`, `gamgin`, `jahldor`, `qorqqan`, `hayratda`,
+`pichirlab`, `mehribon`, `charchagan`, `kinoyali`. `--ref <name>` picks a reference voice
+from `tts/voices/` (see `tts/voices/README.md`; only with the speaker's permission).
+
+Output: `public/voiceover/<name>.wav|mp3` + `<name>.json`, and `out/<name>.mp4`.
+
+### How it works
+
+1. The text is split into sentences (`M.ACADEMY` or `3.5` are not split).
+2. `tts/navoiy_worker.py` (Python) loads the model **once** and synthesises each sentence
+   separately, with Navoiy's Uzbek normaliser (numbers, dates → words).
+3. Because each sentence is generated on its own, its exact start/end in the audio is
+   known; words are spread inside their sentence → subtitles cannot drift by more than
+   one sentence (`"timing": "sentence"`).
+4. The audio is saved as WAV (24 kHz) or converted to MP3 with Remotion's built-in ffmpeg,
+   then `VoiceVideo` renders the MP4 with the voice and subtitles.
+
+### Speed (CPU)
+
+Measured on a 4-core cloud CPU without a GPU: model load ~15 s (once per server start),
+then about **3.5–5 s of computing per 1 s of speech** (a 14 s text ≈ 1 minute), plus
+rendering. An NVIDIA GPU is much faster (the worker uses it automatically if PyTorch with
+CUDA is installed). Quality depends on the reference voice; the model may mispronounce
+some names, loanwords and abbreviations.
+
+## Azure AI Speech (optional cloud engine)
 
 Uses **Azure AI Speech** neural Uzbek voices: **Madina** (`uz-UZ-MadinaNeural`, female)
 and **Sardor** (`uz-UZ-SardorNeural`, male). Azure reports the exact moment each word is
@@ -70,8 +127,8 @@ Then create `video/.env` with just the region and the placeholder key from `.env
 npm run generator       # → http://localhost:3333
 ```
 
-Type or paste Uzbek text, choose **Madina** or **Sardor**, optionally set speed, title and
-file name, press **Video yaratish**. The page shows progress, then plays the MP4 and offers
+Type or paste Uzbek text, choose the **Azure** engine and **Madina** or **Sardor**, optionally
+set speed, title and file name, press **Yaratish**. The page shows progress, then plays the MP4 and offers
 a download link. The text is saved to `texts/<name>.txt`, the voice to
 `public/voiceover/<name>.mp3` (+ `.json` with timings), the video to `out/<name>.mp4`.
 
@@ -81,11 +138,12 @@ a download link. The text is saved to `texts/<name>.txt`, the voice to
 2. Run:
 
 ```bash
-npm run make -- dars-1 --voice madina --title "Birinchi dars"
+npm run make -- dars-1 --engine azure --voice madina --title "Birinchi dars"
 ```
 
-Options: `--voice madina|sardor`, `--rate -10` (slower) … `--rate 10` (faster), `--title "…"`.
-`npm run voice -- dars-1` only generates the voice + timings (no render).
+Options: `--engine azure` (required — the default engine is Navoiy), `--voice madina|sardor`,
+`--rate -10` (slower) … `--rate 10` (faster), `--title "…"`.
+`npm run voice -- dars-1 --engine azure` only generates the voice + timings (no render).
 
 ### How the subtitle sync works
 
@@ -121,9 +179,10 @@ video/
         ├── TestVideo.tsx            # the 10-second test video
         └── VoiceVideo.tsx           # voiceover video (length = voice length)
 texts/                               # your Uzbek scripts (<name>.txt)
+tts/                                 # Navoiy TTS: setup.sh, Python worker, model download, voices/
 scripts/
 ├── generator/                       # local web page: text box + voice selection (npm run generator)
-├── voice.ts                         # text → Azure voice + word timings + subtitle lines
+├── voice.ts                         # text → voice (Navoiy or Azure) + timings + subtitle lines
 ├── make.ts                          # voice + render in one command
 ├── check-env.ts                     # shows whether Azure settings are set (never the values)
 └── lib/                             # Azure client, env handling, pipeline, render, captions (+ tests)

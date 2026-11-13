@@ -89,3 +89,25 @@ export const groupIntoCaptions = (words: Word[]): Caption[] => {
     };
   });
 };
+
+/**
+ * Local TTS gives exact start/end times per sentence (not per word). Spread each sentence's
+ * words inside its own time span, so subtitles can never drift by more than one sentence.
+ */
+export const wordsFromSentenceSegments = (
+  sentences: string[],
+  segments: { startMs: number; endMs: number }[],
+): Word[] => {
+  if (sentences.length !== segments.length) {
+    throw new Error(`Got ${segments.length} audio segments for ${sentences.length} sentences.`);
+  }
+  return sentences.flatMap((sentence, i) => {
+    const { startMs, endMs } = segments[i];
+    const words = sentence.split(/\s+/).filter(Boolean);
+    return estimateWords(words, endMs - startMs).map((w) => ({
+      text: w.text,
+      startMs: startMs + w.startMs,
+      endMs: startMs + w.endMs,
+    }));
+  });
+};

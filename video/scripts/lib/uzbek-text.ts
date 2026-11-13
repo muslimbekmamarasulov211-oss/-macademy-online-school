@@ -25,3 +25,36 @@ export const normalizeForMatch = (s: string): string =>
     .toLowerCase()
     .replace(/[ʻʼ'`‘’]/g, "")
     .replace(/[^\p{L}\p{N}]/gu, "");
+
+const MAX_SENTENCE_CHARS = 220;
+
+/**
+ * Split display text into sentences for local TTS. Each sentence is synthesised on its own,
+ * so we know exactly where it starts and ends in the audio. Very long sentences are split
+ * further at commas/semicolons so the model never gets an overly long input.
+ */
+export const splitSentences = (display: string): string[] => {
+  const rough = display
+    .split(/\n+/)
+    // A sentence ends at . ! ? … only when followed by a space — so "M.ACADEMY" or "3.5" stay whole.
+    .flatMap((line) => line.split(/(?<=[.!?…]["»”)]*)\s+/))
+    .map((s) => s.trim())
+    .filter((s) => normalizeForMatch(s) !== "");
+
+  const result: string[] = [];
+  for (const sentence of rough) {
+    if (sentence.length <= MAX_SENTENCE_CHARS) {
+      result.push(sentence);
+      continue;
+    }
+    let current = "";
+    for (const part of sentence.split(/(?<=[,;:])\s+/)) {
+      if (current && current.length + 1 + part.length > MAX_SENTENCE_CHARS) {
+        result.push(current);
+        current = part;
+      } else current = current ? `${current} ${part}` : part;
+    }
+    if (current) result.push(current);
+  }
+  return result;
+};

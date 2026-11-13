@@ -1,0 +1,172 @@
+{
+  "name": "namuna",
+  "text": "Assalomu alaykum! M.ACADEMY onlayn maktabiga xush kelibsiz.\nBu video sunʼiy intellekt yordamida oʻzbek tilida yaratildi: ovoz, subtitrlar va animatsiyalar avtomatik tayyorlanadi.",
+  "engine": "navoiy",
+  "voice": "navoiy:namuna:mehribon",
+  "audioFile": "voiceover/namuna.wav",
+  "durationMs": 14060,
+  "timing": "sentence",
+  "captions": [
+    {
+      "text": "Assalomu alaykum!",
+      "startMs": 0,
+      "endMs": 1530,
+      "words": [
+        {
+          "text": "Assalomu",
+          "startMs": 0,
+          "endMs": 678
+        },
+        {
+          "text": "alaykum!",
+          "startMs": 678,
+          "endMs": 1280
+        }
+      ]
+    },
+    {
+      "text": "M.ACADEMY onlayn maktabiga",
+      "startMs": 1530,
+      "endMs": 3402,
+      "words": [
+        {
+          "text": "M.ACADEMY",
+          "startMs": 1530,
+          "endMs": 2178
+        },
+        {
+          "text": "onlayn",
+          "startMs": 2178,
+          "endMs": 2682
+        },
+        {
+          "text": "maktabiga",
+          "startMs": 2682,
+          "endMs": 3402
+        }
+      ]
+    },
+    {
+      "text": "xush kelibsiz.",
+      "startMs": 3402,
+      "endMs": 4660,
+      "words": [
+        {
+          "text": "xush",
+          "startMs": 3402,
+          "endMs": 3762
+        },
+        {
+          "text": "kelibsiz.",
+          "startMs": 3762,
+          "endMs": 4410
+        }
+      ]
+    },
+    {
+      "text": "Bu video sunʼiy intellekt",
+      "startMs": 4660,
+      "endMs": 6721,
+      "words": [
+        {
+          "text": "Bu",
+          "startMs": 4660,
+          "endMs": 4907
+        },
+        {
+          "text": "video",
+          "startMs": 4907,
+          "endMs": 5402
+        },
+        {
+          "text": "sunʼiy",
+          "startMs": 5402,
+          "endMs": 5897
+        },
+        {
+          "text": "intellekt",
+          "startMs": 5897,
+          "endMs": 6721
+        }
+      ]
+    },
+    {
+      "text": "yordamida oʻzbek tilida",
+      "startMs": 6721,
+      "endMs": 8618,
+      "words": [
+        {
+          "text": "yordamida",
+          "startMs": 6721,
+          "endMs": 7546
+        },
+        {
+          "text": "oʻzbek",
+          "startMs": 7546,
+          "endMs": 8041
+        },
+        {
+          "text": "tilida",
+          "startMs": 8041,
+          "endMs": 8618
+        }
+      ]
+    },
+    {
+      "text": "yaratildi: ovoz, subtitrlar va",
+      "startMs": 8618,
+      "endMs": 11009,
+      "words": [
+        {
+          "text": "yaratildi:",
+          "startMs": 8618,
+          "endMs": 9442
+        },
+        {
+          "text": "ovoz,",
+          "startMs": 9442,
+          "endMs": 9855
+        },
+        {
+          "text": "subtitrlar",
+          "startMs": 9855,
+          "endMs": 10762
+        },
+        {
+          "text": "va",
+          "startMs": 10762,
+          "endMs": 11009
+        }
+      ]
+    },
+    {
+      "text": "animatsiyalar avtomatik",
+      "startMs": 11009,
+      "endMs": 12988,
+      "words": [
+        {
+          "text": "animatsiyalar",
+          "startMs": 11009,
+          "endMs": 12164
+        },
+        {
+          "text": "avtomatik",
+          "startMs": 12164,
+          "endMs": 12988
+        }
+      ]
+    },
+    {
+      "text": "tayyorlanadi.",
+      "startMs": 12988,
+      "endMs": 14860,
+      "words": [
+        {
+          "text": "tayyorlanadi.",
+          "startMs": 12988,
+          "endMs": 14060
+        }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ovozli video generatori</title>
+    <title>Oʻzbek ovoz generatori</title>
     <style>
       :root {
         --bg: #060b16;
@@ -126,13 +126,31 @@
       }
       .row {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 16px;
       }
-      @media (max-width: 560px) {
-        .row {
-          grid-template-columns: 1fr;
-        }
+      select {
+        width: 100%;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font: inherit;
+      }
+      select:focus {
+        outline: 2px solid var(--gold);
+        outline-offset: 2px;
+      }
+      .check {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .check input {
+        width: 20px;
+        height: 20px;
+        accent-color: var(--gold);
       }
       input[type="range"] {
         width: 100%;
@@ -200,13 +218,7 @@
   <body>
     <main>
       <h1>M<span>.</span>ACADEMY — ovozli video</h1>
-      <p class="lead">Oʻzbekcha matn → AI ovoz → sinxron subtitrlar → MP4 (1080×1920)</p>
-
-      <p id="not-configured" class="card error" hidden>
-        Azure kaliti sozlanmagan. <code>.env</code> faylida <code>AZURE_SPEECH_KEY</code> va
-        <code>AZURE_SPEECH_REGION</code> ni toʻldiring (README → “Azure key setup”), keyin serverni
-        qayta ishga tushiring.
-      </p>
+      <p class="lead">Oʻzbekcha matn → AI ovoz (WAV/MP3) → sinxron subtitrlar → MP4 (1080×1920)</p>
 
       <form id="form" class="card" novalidate>
         <label for="text">Matn</label>
@@ -222,7 +234,41 @@
         </div>
 
         <fieldset style="margin-top: 20px">
-          <legend>Ovoz</legend>
+          <legend>Ovoz dvigateli</legend>
+          <div class="voices">
+            <label class="voice"
+              ><input type="radio" name="engine" value="navoiy" checked /><span
+                >Navoiy TTS<small id="navoiy-state">lokal model · bepul</small></span
+              ></label
+            >
+            <label class="voice"
+              ><input type="radio" name="engine" value="azure" /><span
+                >Azure<small id="azure-state">bulut · kalit kerak</small></span
+              ></label
+            >
+          </div>
+        </fieldset>
+
+        <div id="navoiy-options" class="row" style="margin-top: 20px">
+          <div>
+            <label for="emotion">Kayfiyat (emotsiya)</label>
+            <select id="emotion" name="emotion"></select>
+          </div>
+          <div>
+            <label for="reference">Namuna ovoz</label>
+            <select id="reference" name="reference"></select>
+          </div>
+          <div>
+            <label for="format">Audio format</label>
+            <select id="format" name="format">
+              <option value="wav">WAV (yuqori sifat)</option>
+              <option value="mp3">MP3 (kichik hajm)</option>
+            </select>
+          </div>
+        </div>
+
+        <fieldset id="azure-options" style="margin-top: 20px" hidden>
+          <legend>Azure ovozi</legend>
           <div class="voices">
             <label class="voice"
               ><input type="radio" name="voice" value="madina" checked /><span
@@ -261,15 +307,25 @@
           <div class="hint"><span>Faqat a–z, 0–9 va “-”</span></div>
         </div>
 
-        <button id="submit" type="submit" style="margin-top: 24px">Video yaratish</button>
+        <label class="check" style="margin-top: 20px">
+          <input id="video" name="video" type="checkbox" checked />
+          Video ham yaratish (oʻchirilsa — faqat ovoz fayli)
+        </label>
+
+        <p id="engine-warning" class="error" hidden></p>
+        <button id="submit" type="submit" style="margin-top: 16px">Yaratish</button>
       </form>
 
       <section id="status" class="card" hidden aria-live="polite">
         <strong id="step"></strong>
         <div class="bar"><div id="bar"></div></div>
         <div id="detail" class="hint"></div>
+        <div id="audio-result" hidden>
+          <audio id="audio" controls style="width: 100%; margin-top: 12px"></audio>
+          <a id="audio-download" class="download" href="#">⬇ Ovozni yuklab olish</a>
+        </div>
         <div id="result" hidden>
-          <video id="video" controls playsinline></video>
+          <video id="player" controls playsinline></video>
           <a id="download" class="download" href="#">⬇ MP4 ni yuklab olish</a>
         </div>
       </section>
