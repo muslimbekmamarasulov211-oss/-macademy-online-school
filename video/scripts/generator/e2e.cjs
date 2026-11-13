@@ -66,21 +66,27 @@ const setRange = (page, selector, value) =>
     value,
   );
 
+/** Tap a tile (radio/checkbox styled as a big button) by tapping its visible label. */
+const tapChoice = (page, name, value) =>
+  page.locator(`input[name="${name}"][value="${value}"] + span`).click();
+
 const fillForm = async (page, o) => {
   await page.fill("#text", o.text);
-  await page.check(`input[name="engine"][value="${o.engine ?? "navoiy"}"]`, { force: true });
-  if (o.emotion) await page.selectOption("#emotion", o.emotion);
-  if (o.format) await page.selectOption("#format", o.format);
+  if (o.emotion) await tapChoice(page, "emotion", o.emotion);
   if (o.rate !== undefined) await setRange(page, "#rate", o.rate);
   await page.fill("#title", o.title ?? "");
+  // Rarely needed options live under "Qoʻshimcha sozlamalar".
+  await page.locator("#advanced").evaluate((d) => (d.open = true));
+  if (o.format) await page.selectOption("#format", o.format);
   await page.fill("#name", o.name ?? "");
-  if (o.video === false) await page.uncheck("#video");
+  await page.setChecked("#voice-only", o.video === false);
   for (const f of ["reels", "youtube"]) {
+    if (o.video === false) break;
     const box = page.locator(`input[name="formats"][value="${f}"]`);
-    if ((o.formats ?? ["reels", "youtube"]).includes(f)) await box.check({ force: true });
-    else await box.uncheck({ force: true });
+    const want = (o.formats ?? ["reels", "youtube"]).includes(f);
+    if ((await box.isChecked()) !== want) await tapChoice(page, "formats", f);
   }
-  if (o.music !== undefined) await page.selectOption("#music", o.music);
+  if (o.music !== undefined) await tapChoice(page, "music", o.music);
   if (o.musicVolume !== undefined) await setRange(page, "#music-volume", o.musicVolume);
 };
 
@@ -94,17 +100,24 @@ const fillForm = async (page, o) => {
 
   await check("A1. Page loads with all controls (iPad 820px)", async () => {
     await page.goto(BASE);
-    await page.waitForSelector('#music option[value="ilhom"]', { state: "attached" });
+    await page.waitForSelector('input[name="music"][value="ilhom"]', { state: "attached" });
+    // Navoiy loads automatically when the server starts; wait until it reports ready.
+    await page.waitForFunction(
+      () => document.getElementById("engine-badge").textContent === "Navoiy TTS tayyor",
+      null,
+      { timeout: 180000, polling: 1000 },
+    );
     assert.equal((await page.textContent("#submit")).trim(), "VIDEO YARATISH");
-    assert.equal(await page.locator("#emotion option").count(), 10);
-    assert.deepEqual(await page.$$eval("#music option", (o) => o.map((x) => x.value)), [
+    assert.equal(await page.locator('input[name="emotion"]').count(), 10);
+    assert.equal(await page.isChecked('input[name="music"][value="ilhom"]'), true);
+    assert.equal(await page.isHidden("#engine-choice"), true, "no Azure key: engine choice hidden");
+    assert.deepEqual(await page.$$eval('input[name="music"]', (o) => o.map((x) => x.value)), [
       "",
       "energiya",
       "ilhom",
       "tinch",
     ]);
     assert.equal(await page.locator('input[name="formats"]').count(), 2);
-    assert.equal(await page.textContent("#navoiy-state"), "lokal model · bepul");
     assert.equal(await page.isEnabled("#submit"), true);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 820);
   });
@@ -112,13 +125,13 @@ const fillForm = async (page, o) => {
   await check("A2. No horizontal overflow on a phone (390px)", async () => {
     const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await phone.goto(BASE);
-    await phone.waitForSelector("#emotion option", { state: "attached" });
+    await phone.waitForSelector('input[name="emotion"]', { state: "attached" });
     assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth), 390);
     await phone.close();
   });
 
   await check("A3. Music preview plays the selected track", async () => {
-    await page.selectOption("#music", "energiya");
+    await tapChoice(page, "music", "energiya");
     assert.match(await page.getAttribute("#music-preview", "src"), /\/music\/energiya\.mp3$/);
     const res = await request.get(`${BASE}/music/energiya.mp3`);
     assert.equal(res.status(), 200);
@@ -139,12 +152,12 @@ const fillForm = async (page, o) => {
     assert.match(await page.textContent("#detail"), /formatini tanlang/);
   });
 
-  await check("B3. Azure without a key: button disabled with a warning", async () => {
-    await page.check('input[name="engine"][value="azure"]', { force: true });
-    assert.equal(await page.isVisible("#engine-warning"), true);
-    assert.equal(await page.isEnabled("#submit"), false);
-    await page.check('input[name="engine"][value="navoiy"]', { force: true });
-    assert.equal(await page.isEnabled("#submit"), true);
+  await check("B3. Sample-text and clear buttons", async () => {
+    await page.click("#sample");
+    assert.ok((await page.inputValue("#text")).startsWith("Assalomu alaykum!"));
+    await page.click("#clear");
+    assert.equal(await page.inputValue("#text"), "");
+    assert.equal(await page.textContent("#count"), "0 / 5000");
   });
 
   await check("C1. Cross-site POST without the page's header is blocked (403)", async () => {
@@ -161,7 +174,7 @@ const fillForm = async (page, o) => {
 
   await check("D. Full video: both formats + music + emotion + speed + MP3", async () => {
     await page.reload();
-    await page.waitForSelector('#music option[value="tinch"]', { state: "attached" });
+    await page.waitForSelector('input[name="music"][value="tinch"]', { state: "attached" });
     await fillForm(page, {
       text: "Assalomu alaykum! Bugun 2026-yilning eng foydali uchta odatini koʻrib chiqamiz. Birinchisi — har kuni kitob oʻqish.",
       emotion: "hayratda",
@@ -234,15 +247,19 @@ const fillForm = async (page, o) => {
       ],
     );
     for (const m of meta) assert.ok(m.d > 5 && m.d < 60, `duration ${m.d}`);
-    await page.screenshot({
-      path: process.env.E2E_SCREENSHOT || "out/e2e-result.png",
-      fullPage: true,
-    });
+    assert.match(await page.textContent("#elapsed"), /^Oʻtgan vaqt: \d+:\d\d$/);
+    const shot = process.env.E2E_SCREENSHOT || "out/e2e-result.png";
+    await page.screenshot({ path: shot, fullPage: true });
+    // iPad landscape: form on the left, result on the right.
+    await page.setViewportSize({ width: 1180, height: 820 });
+    await page.locator("#result").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: shot.replace(/\.png$/, "-landscape.png") });
+    await page.setViewportSize({ width: 820, height: 1180 });
   });
 
   await check("F. YouTube only, no music, WAV, calm emotion", async () => {
     await page.reload();
-    await page.waitForSelector("#emotion option", { state: "attached" });
+    await page.waitForSelector('input[name="emotion"]', { state: "attached" });
     await fillForm(page, {
       text: "Bu qisqa sinov videosi. Musiqasiz va faqat YouTube formatida.",
       emotion: "xotirjam",
@@ -263,7 +280,7 @@ const fillForm = async (page, o) => {
 
   await check("G. Voice only (no video), MP3", async () => {
     await page.reload();
-    await page.waitForSelector("#emotion option", { state: "attached" });
+    await page.waitForSelector('input[name="emotion"]', { state: "attached" });
     await fillForm(page, {
       text: "Faqat ovoz fayli kerak.",
       emotion: "mehribon",

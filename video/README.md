@@ -1,5 +1,12 @@
 # M.ACADEMY Video Studio (Remotion)
 
+> **Dasturchi boʻlmaganlar uchun (iPad):** Claude Code sessiyasida “Video studiyani ishga tushir”
+> deb yozing. Claude serverni ishga tushiradi va sahifani preview panelda ochadi. Sahifada:
+> **1** matnni yozing (yoki “Namuna matn”), **2** kayfiyat va tezlikni tanlang, **3** formatni
+> (9:16 / 16:9) va musiqani tanlang → **VIDEO YARATISH**. Tayyor video oʻng tomonda (iPad
+> gorizontal) yoki pastda chiqadi: **MP4 yuklab olish** yoki **Rasmlarga saqlash / Ulashish**.
+> Navoiy TTS yangi sessiyalarda avtomatik oʻrnatiladi (muhit sozlamasi).
+>
 > **Tezkor boshlash (oʻzbekcha):** `npm install` → `npm run navoiy:setup` (bir marta) →
 > `npm run generator` → brauzerda http://localhost:3333 → matn yozing, format (9:16 / 16:9) va
 > musiqani tanlang → **▶ Yaratish**. Ovoz, animatsiya, subtitr, musiqa va MP4 — avtomatik.

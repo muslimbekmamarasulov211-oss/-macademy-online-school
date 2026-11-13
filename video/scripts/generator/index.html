@@ -2,7 +2,9 @@
 <html lang="uz">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#060b16" />
     <title>M.ACADEMY video studiya</title>
     <style>
       :root {
@@ -13,245 +15,411 @@
         --text: #f5f3ee;
         --muted: #aab3c5;
         --gold: #d4ab4f;
+        --gold-soft: rgba(212, 171, 79, 0.14);
         --danger: #ff8a80;
+        --ok: #7ad69a;
         color-scheme: dark;
       }
       * {
         box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
       }
       body {
         margin: 0;
         background: var(--bg);
         color: var(--text);
         font:
-          16px/1.5 system-ui,
-          -apple-system,
+          17px/1.5 -apple-system,
+          system-ui,
           "Segoe UI",
           sans-serif;
       }
       main {
-        max-width: 720px;
+        max-width: 1320px;
         margin: 0 auto;
-        padding: 32px 16px 64px;
+        padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 64px
+          max(16px, env(safe-area-inset-left));
+      }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 24px;
       }
       h1 {
-        font-family: Georgia, serif;
-        font-size: 34px;
-        margin: 0 0 4px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(26px, 4vw, 36px);
+        margin: 0;
       }
       h1 span {
         color: var(--gold);
       }
       .lead {
         color: var(--muted);
-        margin: 0 0 28px;
+        margin: 4px 0 0;
+        font-size: 16px;
       }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        font-size: 15px;
+        white-space: nowrap;
+      }
+      .badge::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .badge.ready::before {
+        background: var(--ok);
+      }
+      .badge.loading::before {
+        background: var(--gold);
+        animation: pulse 1s ease-in-out infinite alternate;
+      }
+      .badge.error::before {
+        background: var(--danger);
+      }
+      @keyframes pulse {
+        to {
+          opacity: 0.3;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .badge.loading::before {
+          animation: none;
+        }
+      }
+
+      /* iPad landscape and wider: form left, result right. */
+      .layout {
+        display: grid;
+        gap: 20px;
+        align-items: start;
+      }
+      @media (min-width: 1100px) {
+        .layout {
+          grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+        }
+        .side {
+          position: sticky;
+          top: 16px;
+        }
+      }
+
       .card {
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 20px;
+        border-radius: 20px;
+        padding: 22px;
         margin-bottom: 20px;
       }
-      label,
-      legend {
+      h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 16px;
+        font-size: 21px;
+      }
+      h2 .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--gold);
+        color: #0a1222;
+        font-size: 17px;
+        flex: none;
+      }
+      .step + .step {
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      label.title,
+      .group-title {
         display: block;
         font-weight: 600;
-        margin-bottom: 8px;
+        margin: 18px 0 10px;
       }
       textarea,
-      input[type="text"] {
+      input[type="text"],
+      select {
         width: 100%;
+        min-height: 48px;
         background: var(--bg);
         color: var(--text);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px;
+        border-radius: 12px;
+        padding: 12px 14px;
         font: inherit;
+        font-size: 17px; /* ≥ 16px: iPad/iPhone do not zoom in on focus */
       }
       textarea {
-        min-height: 180px;
+        min-height: 200px;
         resize: vertical;
       }
-      textarea:focus,
-      input:focus,
-      button:focus-visible {
-        outline: 2px solid var(--gold);
+      :focus-visible {
+        outline: 3px solid var(--gold);
         outline-offset: 2px;
       }
       .hint {
         color: var(--muted);
-        font-size: 14px;
-        margin-top: 6px;
+        font-size: 15px;
+        margin-top: 8px;
         display: flex;
         justify-content: space-between;
         gap: 12px;
+        flex-wrap: wrap;
       }
-      fieldset {
-        border: 0;
-        padding: 0;
-        margin: 0;
+      .buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
       }
-      .voices {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-      .voice {
-        position: relative;
-      }
-      .voice input {
-        position: absolute;
-        opacity: 0;
-      }
-      .voice input[type="checkbox"]:not(:checked) + span {
-        opacity: 0.55;
-      }
-      #result video {
-        margin-top: 16px;
-      }
-      #result.both video.youtube {
-        max-height: none;
-      }
-      .voice span {
-        display: block;
-        padding: 14px;
-        border: 1px solid var(--border);
+      .ghost {
+        min-height: 44px;
+        padding: 10px 16px;
         border-radius: 12px;
-        background: var(--bg);
+        border: 1px solid var(--border);
+        background: var(--raised);
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
         cursor: pointer;
       }
-      .voice small {
-        display: block;
-        color: var(--muted);
+
+      /* Big tappable choices (radio/checkbox styled as tiles). */
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
       }
-      .voice input:checked + span {
+      .choices.wide {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      .choice {
+        position: relative;
+      }
+      .choice input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+      }
+      .choice > span {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 56px;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--bg);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .choice small {
+        color: var(--muted);
+        font-weight: 400;
+        font-size: 14px;
+      }
+      .choice input:checked + span {
         border-color: var(--gold);
+        background: var(--gold-soft);
         box-shadow: inset 0 0 0 1px var(--gold);
       }
-      .voice input:focus-visible + span {
-        outline: 2px solid var(--gold);
+      .choice input:focus-visible + span {
+        outline: 3px solid var(--gold);
         outline-offset: 2px;
       }
-      .row {
+      .format span {
+        flex-direction: row;
+        align-items: center;
+        gap: 14px;
+        min-height: 72px;
+      }
+      .fmt small {
+        display: block;
+      }
+      .shape {
+        flex: none;
+        border: 2px solid var(--gold);
+        border-radius: 4px;
+      }
+      .shape.tall {
+        width: 22px;
+        height: 38px;
+      }
+      .shape.wide {
+        width: 44px;
+        height: 25px;
+      }
+
+      .slider-row {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 15px;
       }
-      select {
+      input[type="range"] {
         width: 100%;
-        background: var(--bg);
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px;
-        font: inherit;
-      }
-      select:focus {
-        outline: 2px solid var(--gold);
-        outline-offset: 2px;
+        height: 44px;
+        accent-color: var(--gold);
       }
       .check {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
+        min-height: 44px;
+        font-weight: 600;
       }
       .check input {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
         accent-color: var(--gold);
       }
-      input[type="range"] {
-        width: 100%;
-        accent-color: var(--gold);
+      details {
+        margin-top: 28px;
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
       }
-      button {
+      summary {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0 16px;
+      }
+
+      .primary {
         width: 100%;
-        padding: 16px;
+        min-height: 64px;
+        margin-top: 28px;
         border: 0;
-        border-radius: 12px;
+        border-radius: 16px;
         background: var(--gold);
         color: #0a1222;
         font: inherit;
-        font-weight: 700;
-        font-size: 18px;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: 2px;
         cursor: pointer;
       }
-      button:disabled {
+      .primary:disabled {
         opacity: 0.5;
-        cursor: wait;
+        cursor: not-allowed;
       }
+      .error {
+        color: var(--danger);
+      }
+
       .bar {
-        height: 10px;
+        height: 12px;
         background: var(--raised);
-        border-radius: 5px;
+        border-radius: 6px;
         overflow: hidden;
-        margin: 12px 0 6px;
+        margin: 14px 0 8px;
       }
       .bar div {
         height: 100%;
         width: 0;
         background: var(--gold);
-        transition: width 0.3s;
+        transition: width 0.4s;
       }
-      .error {
-        color: var(--danger);
+      .placeholder {
+        color: var(--muted);
+        text-align: center;
+        padding: 28px 8px;
       }
-      .warn {
-        color: var(--gold);
+      .result-item {
+        margin-top: 22px;
       }
-      video {
+      .result-item video {
+        display: block;
         width: 100%;
-        max-height: 70vh;
-        border-radius: 12px;
+        max-height: 72vh;
+        border-radius: 14px;
         background: #000;
+        margin-top: 10px;
+      }
+      .result-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
         margin-top: 12px;
       }
-      a {
-        color: var(--gold);
-      }
-      .download {
-        display: inline-block;
-        margin-top: 12px;
-        font-weight: 700;
-      }
-      ul {
-        padding-left: 20px;
-        margin: 0;
-      }
-      h2.section {
+      .action {
         display: flex;
         align-items: center;
-        gap: 12px;
-        margin: 32px 0 16px;
-        padding-top: 24px;
-        border-top: 1px solid var(--border);
-        font-size: 20px;
-      }
-      form h2.section:first-child {
-        margin-top: 0;
-        padding-top: 0;
-        border-top: 0;
-      }
-      h2.section span {
-        display: inline-flex;
-        align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
+        min-height: 52px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--gold);
+        background: transparent;
+        color: var(--gold);
+        font: inherit;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      .action.solid {
         background: var(--gold);
         color: #0a1222;
-        font-size: 16px;
       }
-      #submit {
-        letter-spacing: 2px;
+      audio {
+        width: 100%;
+        margin-top: 10px;
+      }
+      .video-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
       }
       .video-list li {
-        margin: 6px 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
       }
-      .video-list a + a {
-        margin-left: 12px;
+      .video-list li:last-child {
+        border-bottom: 0;
+      }
+      .video-list .name {
+        flex: 1 1 200px;
+        word-break: break-all;
+      }
+      .video-list a {
+        color: var(--gold);
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
       }
       [hidden] {
         display: none !important;
@@ -260,165 +428,200 @@
   </head>
   <body>
     <main>
-      <h1>M<span>.</span>ACADEMY video studiya</h1>
-      <p class="lead">
-        Bitta tugma: oʻzbekcha matn → AI ovoz → animatsiya + subtitr + musiqa → MP4 (9:16 va 16:9)
-      </p>
-
-      <form id="form" class="card" novalidate>
-        <h2 class="section"><span>1</span> Matn</h2>
-        <label for="text">Oʻzbekcha matn</label>
-        <textarea
-          id="text"
-          name="text"
-          maxlength="5000"
-          required
-          placeholder="Assalomu alaykum! Bugun oʻzbek tili darsini boshlaymiz…"
-        ></textarea>
-        <div class="hint">
-          <span>Apostrofni istalgancha yozing: o' / o‘ / oʻ</span><span id="count">0 / 5000</span>
+      <header>
+        <div>
+          <h1>M<span>.</span>ACADEMY video studiya</h1>
+          <p class="lead">
+            Matn yozing — ovoz, animatsiya, subtitr va musiqa avtomatik tayyorlanadi.
+          </p>
         </div>
+        <span id="engine-badge" class="badge" role="status">Tekshirilmoqda…</span>
+      </header>
 
-        <h2 class="section"><span>2</span> Ovoz sozlamalari</h2>
-        <fieldset>
-          <legend>Ovoz dvigateli</legend>
-          <div class="voices">
-            <label class="voice"
-              ><input type="radio" name="engine" value="navoiy" checked /><span
-                >Navoiy TTS<small id="navoiy-state">lokal model · bepul</small></span
-              ></label
+      <div class="layout">
+        <form id="form" class="card" novalidate>
+          <section class="step">
+            <h2><span class="num">1</span> Matn</h2>
+            <label class="title" for="text">Oʻzbekcha matnni shu yerga yozing yoki qoʻying</label>
+            <textarea
+              id="text"
+              name="text"
+              maxlength="5000"
+              required
+              placeholder="Masalan: Assalomu alaykum! Bugun ingliz tilidagi eng foydali uchta iborani oʻrganamiz…"
+            ></textarea>
+            <div class="hint">
+              <span>Apostrofni istalgancha yozing: o' / o‘ / oʻ</span
+              ><span id="count">0 / 5000</span>
+            </div>
+            <div class="buttons">
+              <button type="button" class="ghost" id="sample">Namuna matn</button>
+              <button type="button" class="ghost" id="clear">Tozalash</button>
+            </div>
+            <label class="title" for="title"
+              >Sarlavha (ixtiyoriy — videoning boshida chiqadi)</label
             >
-            <label class="voice"
-              ><input type="radio" name="engine" value="azure" /><span
-                >Azure<small id="azure-state">bulut · kalit kerak</small></span
-              ></label
+            <input
+              id="title"
+              name="title"
+              type="text"
+              maxlength="80"
+              placeholder="Masalan: 3 ta foydali ibora"
+            />
+          </section>
+
+          <section class="step">
+            <h2><span class="num">2</span> Ovoz</h2>
+
+            <div id="engine-choice" hidden>
+              <span class="group-title">Ovoz dvigateli</span>
+              <div class="choices wide">
+                <label class="choice"
+                  ><input type="radio" name="engine" value="navoiy" checked /><span
+                    >Navoiy TTS<small>lokal · bepul</small></span
+                  ></label
+                >
+                <label class="choice"
+                  ><input type="radio" name="engine" value="azure" /><span
+                    >Azure<small>bulut</small></span
+                  ></label
+                >
+              </div>
+            </div>
+
+            <div id="navoiy-options">
+              <span class="group-title">Kayfiyat</span>
+              <div class="choices" id="emotions"></div>
+            </div>
+
+            <div id="azure-options" hidden>
+              <span class="group-title">Azure ovozi</span>
+              <div class="choices wide">
+                <label class="choice"
+                  ><input type="radio" name="voice" value="madina" checked /><span
+                    >Madina<small>ayol ovozi</small></span
+                  ></label
+                >
+                <label class="choice"
+                  ><input type="radio" name="voice" value="sardor" /><span
+                    >Sardor<small>erkak ovozi</small></span
+                  ></label
+                >
+              </div>
+            </div>
+
+            <label class="group-title" for="rate"
+              >Tezlik: <span id="rate-value">odatiy</span></label
             >
-          </div>
-        </fieldset>
+            <div class="slider-row">
+              <span>Sekin</span>
+              <input id="rate" name="rate" type="range" min="-30" max="30" step="5" value="0" />
+              <span>Tez</span>
+            </div>
+          </section>
 
-        <div id="navoiy-options" class="row" style="margin-top: 20px">
-          <div>
-            <label for="emotion">Kayfiyat (emotsiya)</label>
-            <select id="emotion" name="emotion"></select>
-          </div>
-          <div>
-            <label for="reference">Namuna ovoz</label>
-            <select id="reference" name="reference"></select>
-          </div>
-          <div>
-            <label for="format">Audio format</label>
-            <select id="format" name="format">
-              <option value="wav">WAV (yuqori sifat)</option>
-              <option value="mp3">MP3 (kichik hajm)</option>
-            </select>
-          </div>
-        </div>
-
-        <fieldset id="azure-options" style="margin-top: 20px" hidden>
-          <legend>Azure ovozi</legend>
-          <div class="voices">
-            <label class="voice"
-              ><input type="radio" name="voice" value="madina" checked /><span
-                >Madina<small>ayol ovozi</small></span
-              ></label
-            >
-            <label class="voice"
-              ><input type="radio" name="voice" value="sardor" /><span
-                >Sardor<small>erkak ovozi</small></span
-              ></label
-            >
-          </div>
-        </fieldset>
-
-        <div class="row" style="margin-top: 20px">
-          <div>
-            <label for="rate">Tezlik: <span id="rate-value">0%</span></label>
-            <input id="rate" name="rate" type="range" min="-30" max="30" step="5" value="0" />
-          </div>
-          <div>
-            <label for="title">Sarlavha (ixtiyoriy)</label>
-            <input id="title" name="title" type="text" maxlength="80" placeholder="Birinchi dars" />
-          </div>
-        </div>
-
-        <div style="margin-top: 20px">
-          <label for="name">Fayl nomi (ixtiyoriy)</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            maxlength="60"
-            pattern="[a-z0-9][a-z0-9-]*"
-            placeholder="dars-1  (boʻsh qolsa: sana-vaqt)"
-          />
-          <div class="hint"><span>Faqat a–z, 0–9 va “-”</span></div>
-        </div>
-
-        <h2 class="section"><span>3</span> Video va musiqa</h2>
-        <label class="check">
-          <input id="video" type="checkbox" checked />
-          Video ham yaratish (oʻchirilsa — faqat ovoz fayli)
-        </label>
-
-        <div id="video-options">
-          <fieldset style="margin-top: 20px">
-            <legend>Video formati</legend>
-            <div class="voices">
-              <label class="voice"
+          <section class="step" id="video-step">
+            <h2><span class="num">3</span> Video va musiqa</h2>
+            <span class="group-title">Video formati (bittasini yoki ikkalasini tanlang)</span>
+            <div class="choices wide">
+              <label class="choice format"
                 ><input type="checkbox" name="formats" value="reels" checked /><span
-                  >9:16 Reels<small>Instagram · TikTok · Shorts</small></span
+                  ><i class="shape tall" aria-hidden="true"></i
+                  ><span class="fmt"
+                    >9:16 · Reels<small>Instagram, TikTok, Shorts</small></span
+                  ></span
                 ></label
               >
-              <label class="voice"
+              <label class="choice format"
                 ><input type="checkbox" name="formats" value="youtube" checked /><span
-                  >16:9 YouTube<small>1920×1080</small></span
+                  ><i class="shape wide" aria-hidden="true"></i
+                  ><span class="fmt">16:9 · YouTube<small>gorizontal video</small></span></span
                 ></label
               >
             </div>
-          </fieldset>
 
-          <div class="row" style="margin-top: 20px">
-            <div>
-              <label for="music">Fon musiqasi</label>
-              <select id="music"></select>
-            </div>
-            <div>
-              <label for="music-volume"
+            <span class="group-title">Fon musiqasi</span>
+            <div class="choices" id="music-choices"></div>
+            <audio id="music-preview" controls preload="none" hidden></audio>
+
+            <div id="music-volume-row">
+              <label class="group-title" for="music-volume"
                 >Musiqa balandligi: <span id="music-volume-value">18%</span></label
               >
-              <input id="music-volume" type="range" min="0" max="40" step="2" value="18" />
+              <div class="slider-row">
+                <span>Past</span>
+                <input id="music-volume" type="range" min="0" max="40" step="2" value="18" />
+                <span>Baland</span>
+              </div>
+              <div class="hint"><span>Ovoz gapirganda musiqa oʻzi pasayadi.</span></div>
             </div>
-          </div>
-          <audio
-            id="music-preview"
-            controls
-            preload="none"
-            style="width: 100%; margin-top: 12px"
-          ></audio>
-          <div class="hint"><span>Ovoz gapirganda musiqa avtomatik pasayadi.</span></div>
+          </section>
+
+          <details id="advanced">
+            <summary>Qoʻshimcha sozlamalar</summary>
+            <label class="check" style="margin-top: 8px">
+              <input id="voice-only" type="checkbox" />
+              Faqat ovoz yaratish (videosiz)
+            </label>
+            <div class="row">
+              <div>
+                <label class="title" for="reference">Namuna ovoz</label>
+                <select id="reference" name="reference"></select>
+              </div>
+              <div>
+                <label class="title" for="format">Ovoz fayli formati</label>
+                <select id="format" name="format">
+                  <option value="wav">WAV (yuqori sifat)</option>
+                  <option value="mp3">MP3 (kichik hajm)</option>
+                </select>
+              </div>
+            </div>
+            <label class="title" for="name">Fayl nomi</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              maxlength="60"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              placeholder="boʻsh qoldirsangiz — sana va vaqt"
+            />
+            <div class="hint"><span>Faqat a–z, 0–9 va “-”. Masalan: dars-1</span></div>
+          </details>
+
+          <p id="engine-warning" class="error" hidden></p>
+          <button id="submit" class="primary" type="submit">VIDEO YARATISH</button>
+        </form>
+
+        <div class="side">
+          <section id="status" class="card" aria-live="polite">
+            <h2>Natija</h2>
+            <p id="placeholder" class="placeholder">
+              Matnni yozib, <strong>VIDEO YARATISH</strong> tugmasini bosing.<br />Tayyor video shu
+              yerda chiqadi.
+            </p>
+            <div id="progress" hidden>
+              <strong id="step"></strong>
+              <div class="bar"><div id="bar"></div></div>
+              <div class="hint"><span id="detail"></span><span id="elapsed"></span></div>
+            </div>
+            <div id="audio-result" hidden>
+              <strong style="display: block; margin-top: 20px">Ovoz</strong>
+              <audio id="audio" controls preload="metadata"></audio>
+              <div class="result-actions">
+                <a id="audio-download" class="action" href="#">Ovozni yuklab olish</a>
+              </div>
+            </div>
+            <div id="result" hidden></div>
+          </section>
+
+          <section class="card">
+            <h2>Tayyor videolar</h2>
+            <ul id="videos" class="video-list"></ul>
+          </section>
         </div>
-
-        <p id="engine-warning" class="error" hidden></p>
-        <button id="submit" type="submit" style="margin-top: 16px">VIDEO YARATISH</button>
-      </form>
-
-      <section id="status" class="card" hidden aria-live="polite">
-        <strong id="step"></strong>
-        <div class="bar"><div id="bar"></div></div>
-        <div id="detail" class="hint"></div>
-        <div id="audio-result" hidden>
-          <audio id="audio" controls style="width: 100%; margin-top: 12px"></audio>
-          <a id="audio-download" class="download" href="#">⬇ Ovozni yuklab olish</a>
-        </div>
-        <div id="result" hidden></div>
-      </section>
-
-      <section class="card">
-        <strong>Tayyor videolar</strong>
-        <ul id="videos" class="video-list" style="margin-top: 8px">
-          <li class="hint">Hali yoʻq</li>
-        </ul>
-      </section>
+      </div>
     </main>
     <script src="/app.js"></script>
   </body>

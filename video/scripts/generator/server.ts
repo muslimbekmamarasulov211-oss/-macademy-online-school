@@ -58,6 +58,30 @@ type Job = {
   /** Finished videos: file name in out/ (without .mp4) + format. */
   outputs: { file: string; format: VideoFormat; label: string }[];
   error?: string;
+  startedAt: number;
+};
+
+/** Messages for the person using the page — plain Uzbek instead of technical English. */
+const toUzbek = (message: string): string => {
+  const rules: [RegExp, string][] = [
+    [/^Name:/, "Fayl nomi faqat kichik lotin harflari (a–z), raqamlar va “-” dan iborat boʻlsin."],
+    [/Text is empty|empty$/, "Matn kiriting."],
+    [/Text is longer/, "Matn 5000 belgidan oshmasin. Uzun matnni bir nechta videoga boʻling."],
+    [/Unknown emotion/, "Kayfiyat notoʻgʻri tanlangan."],
+    [/Rate must/, "Tezlik notoʻgʻri."],
+    [/at least one format/, "Kamida bitta video formatini tanlang."],
+    [/Unknown format/, "Video formati notoʻgʻri."],
+    [/^Music .* not found/, "Tanlangan musiqa topilmadi."],
+    [/Music volume/, "Musiqa balandligi notoʻgʻri."],
+    [/AZURE_SPEECH|Azure rejected/, "Azure kaliti sozlanmagan. Navoiy TTS dan foydalaning."],
+    [
+      /not installed|oʻrnatilmagan/,
+      "Navoiy TTS oʻrnatilmagan. Claudeʼga “Navoiy TTS ni oʻrnat” deb yozing.",
+    ],
+    [/Reference voice|Invalid voice name/, "Tanlangan namuna ovoz topilmadi."],
+  ];
+  for (const [re, uz] of rules) if (re.test(message)) return uz;
+  return `Video yaratishda xatolik yuz berdi. Texnik maʼlumot: ${message}`;
 };
 
 const jobs = new Map<string, Job>();
@@ -168,7 +192,7 @@ const runJob = async (
     job.state = "done";
   } catch (err) {
     job.state = "error";
-    job.error = (err as Error).message;
+    job.error = toUzbek((err as Error).message);
     console.error(`❌ ${job.name}: ${job.error}`);
   } finally {
     busy = false;
@@ -176,8 +200,10 @@ const runJob = async (
 };
 
 const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-  if (!isTrustedRequest(req)) return send(res, 403, { error: "Cross-site request blocked." });
-  if (busy) return send(res, 409, { error: "Another video is being generated. Please wait." });
+  if (!isTrustedRequest(req)) return send(res, 403, { error: "Ruxsat etilmagan soʻrov." });
+  if (busy) {
+    return send(res, 409, { error: "Hozir boshqa video tayyorlanmoqda. U tugashini kuting." });
+  }
 
   const body = (await readJsonBody(req)) as Record<string, unknown>;
   const text = typeof body.text === "string" ? body.text : "";
@@ -190,10 +216,8 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
       ? body.name.trim().toLowerCase()
       : timestampName();
 
-  if (text.trim().length === 0)
-    return send(res, 400, { error: "Matn kiriting (enter some text)." });
-  if (text.length > MAX_TEXT_LENGTH)
-    return send(res, 400, { error: `Max ${MAX_TEXT_LENGTH} characters.` });
+  if (text.trim().length === 0) return send(res, 400, { error: "Matn kiriting." });
+  if (text.length > MAX_TEXT_LENGTH) return send(res, 400, { error: toUzbek("Text is longer") });
   let settings: VoiceSettings;
   let video: VideoOptions;
   try {
@@ -219,7 +243,7 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
       resolveReference(ROOT, settings.reference);
     }
   } catch (err) {
-    return send(res, 400, { error: (err as Error).message });
+    return send(res, 400, { error: toUzbek((err as Error).message) });
   }
 
   await saveText(ROOT, name, text);
@@ -231,6 +255,7 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
     progress: 0,
     videoRequested,
     outputs: [],
+    startedAt: Date.now(),
   };
   jobs.set(job.id, job);
   busy = true;
@@ -332,6 +357,7 @@ const server = http.createServer(async (req, res) => {
       const navoiyInstalled = isNavoiyInstalled(ROOT);
       return send(res, 200, {
         navoiyInstalled,
+        navoiyState: navoiyInstalled ? navoiy.state : "missing",
         azureConfigured: isAzureConfigured(),
         busy,
         currentJobId: busy ? currentJobId : null,
@@ -346,7 +372,9 @@ const server = http.createServer(async (req, res) => {
     const jobMatch = /^\/api\/jobs\/([0-9a-f-]{36})$/.exec(url.pathname);
     if (req.method === "GET" && jobMatch) {
       const job = jobs.get(jobMatch[1]);
-      return job ? send(res, 200, job) : send(res, 404, { error: "Not found" });
+      return job
+        ? send(res, 200, { ...job, elapsedMs: Date.now() - job.startedAt })
+        : send(res, 404, { error: "Not found" });
     }
     const media = matchMedia(url.pathname);
     if ((req.method === "GET" || req.method === "HEAD") && media)

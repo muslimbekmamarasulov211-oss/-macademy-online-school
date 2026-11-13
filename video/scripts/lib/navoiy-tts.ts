@@ -79,6 +79,8 @@ export type NavoiyResult = { durationMs: number; segments: { startMs: number; en
 export class NavoiyWorker {
   private proc: ChildProcessWithoutNullStreams | null = null;
   private ready: Promise<void> | null = null;
+  /** For the UI: is the model loaded? */
+  state: "idle" | "loading" | "ready" | "error" = "idle";
   private pending = new Map<string, Pending>();
   private nextId = 1;
   private stderrTail: string[] = [];
@@ -92,6 +94,7 @@ export class NavoiyWorker {
       return Promise.reject(new Error("Navoiy TTS is not installed. Run: npm run navoiy:setup"));
     }
     const p = navoiyPaths(this.root);
+    this.state = "loading";
     this.ready = new Promise((resolve, reject) => {
       console.log("🧠 Loading Navoiy TTS model (first time takes ~20–60 s)…");
       const proc = spawn(p.python, [p.worker], {
@@ -115,7 +118,10 @@ export class NavoiyWorker {
         } catch {
           return;
         }
-        if (msg.ready) return resolve();
+        if (msg.ready) {
+          this.state = "ready";
+          return resolve();
+        }
         const job = this.pending.get(String(msg.id));
         if (!job) return;
         if (typeof msg.progress === "number") return job.onProgress?.(msg.progress);
@@ -127,6 +133,7 @@ export class NavoiyWorker {
         const err = new Error(
           `Navoiy TTS worker stopped (code ${code}).\n${this.stderrTail.slice(-5).join("\n")}`,
         );
+        this.state = "error";
         reject(err);
         for (const job of this.pending.values()) job.reject(err);
         this.pending.clear();
@@ -163,6 +170,7 @@ export class NavoiyWorker {
   }
 
   stop() {
+    this.state = "idle";
     this.proc?.stdin.end();
     this.proc = null;
     this.ready = null;
