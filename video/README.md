@@ -30,6 +30,18 @@ and background music → press **▶ Yaratish**. Everything else is automatic:
 5. **Export** — `out/<name>-reels.mp4` (1080×1920) and `out/<name>-youtube.mp4` (1920×1080),
    with preview and download links on the page.
 
+The page is organised in three steps — **1 Matn**, **2 Ovoz sozlamalari**, **3 Video va
+musiqa** — and one **VIDEO YARATISH** button. Finished videos play on the page and have
+download links; the list at the bottom keeps every video made so far. Reloading the page
+while a video is being made keeps showing its progress. Only one video is made at a time.
+
+**End-to-end test** (real browser, real TTS and rendering, ~5 minutes on a CPU): start
+`npm run generator`, then in another terminal run `npm run e2e` (needs Playwright with
+Chromium). It checks 14 scenarios: all controls, phone/iPad widths, music preview,
+input errors, cross-site protection, busy/reload handling, both formats with music,
+YouTube-only without music, voice-only, downloads (headers, size, byte ranges) and the
+browser console.
+
 Same from the command line (reads `texts/<name>.txt`):
 
 ```bash

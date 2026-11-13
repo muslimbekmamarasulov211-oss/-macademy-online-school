@@ -89,11 +89,16 @@ const renderVideoList = (names) => {
   }
   for (const name of names) {
     const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.href = `/videos/${encodeURIComponent(name)}.mp4`;
-    a.textContent = `${name}.mp4`;
-    a.target = "_blank";
-    li.append(a);
+    const label = document.createElement("span");
+    label.textContent = `${name}.mp4 — `;
+    const view = document.createElement("a");
+    view.href = `/videos/${encodeURIComponent(name)}.mp4`;
+    view.textContent = "Koʻrish";
+    view.target = "_blank";
+    const dl = document.createElement("a");
+    dl.href = `/videos/${encodeURIComponent(name)}.mp4?download`;
+    dl.textContent = "Yuklab olish";
+    li.append(label, view, dl);
     list.append(li);
   }
 };
@@ -215,7 +220,7 @@ form.addEventListener("submit", async (e) => {
   try {
     const res = await fetch("/api/jobs", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Macademy-Generator": "1" },
       body: JSON.stringify(data),
     });
     const body = await res.json();
@@ -228,4 +233,17 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
-refreshStatus();
+// If a video is already being made (e.g. the page was reloaded), keep showing its progress.
+const start = async () => {
+  await refreshStatus();
+  if (status.currentJobId) {
+    $("submit").disabled = true;
+    showStep("Davom etmoqda…", 0);
+    try {
+      await poll(status.currentJobId);
+    } finally {
+      await refreshStatus();
+    }
+  }
+};
+start();

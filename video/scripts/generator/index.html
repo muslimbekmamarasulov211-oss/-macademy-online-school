@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Oʻzbek ovoz generatori</title>
+    <title>M.ACADEMY video studiya</title>
     <style>
       :root {
         --bg: #060b16;
@@ -219,6 +219,40 @@
         padding-left: 20px;
         margin: 0;
       }
+      h2.section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 32px 0 16px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        font-size: 20px;
+      }
+      form h2.section:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
+      h2.section span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--gold);
+        color: #0a1222;
+        font-size: 16px;
+      }
+      #submit {
+        letter-spacing: 2px;
+      }
+      .video-list li {
+        margin: 6px 0;
+      }
+      .video-list a + a {
+        margin-left: 12px;
+      }
       [hidden] {
         display: none !important;
       }
@@ -226,13 +260,14 @@
   </head>
   <body>
     <main>
-      <h1>M<span>.</span>ACADEMY — ovozli video</h1>
+      <h1>M<span>.</span>ACADEMY video studiya</h1>
       <p class="lead">
         Bitta tugma: oʻzbekcha matn → AI ovoz → animatsiya + subtitr + musiqa → MP4 (9:16 va 16:9)
       </p>
 
       <form id="form" class="card" novalidate>
-        <label for="text">Matn</label>
+        <h2 class="section"><span>1</span> Matn</h2>
+        <label for="text">Oʻzbekcha matn</label>
         <textarea
           id="text"
           name="text"
@@ -244,7 +279,8 @@
           <span>Apostrofni istalgancha yozing: o' / o‘ / oʻ</span><span id="count">0 / 5000</span>
         </div>
 
-        <fieldset style="margin-top: 20px">
+        <h2 class="section"><span>2</span> Ovoz sozlamalari</h2>
+        <fieldset>
           <legend>Ovoz dvigateli</legend>
           <div class="voices">
             <label class="voice"
@@ -318,7 +354,8 @@
           <div class="hint"><span>Faqat a–z, 0–9 va “-”</span></div>
         </div>
 
-        <label class="check" style="margin-top: 20px">
+        <h2 class="section"><span>3</span> Video va musiqa</h2>
+        <label class="check">
           <input id="video" type="checkbox" checked />
           Video ham yaratish (oʻchirilsa — faqat ovoz fayli)
         </label>
@@ -362,7 +399,7 @@
         </div>
 
         <p id="engine-warning" class="error" hidden></p>
-        <button id="submit" type="submit" style="margin-top: 16px">▶ Yaratish</button>
+        <button id="submit" type="submit" style="margin-top: 16px">VIDEO YARATISH</button>
       </form>
 
       <section id="status" class="card" hidden aria-live="polite">
@@ -378,7 +415,7 @@
 
       <section class="card">
         <strong>Tayyor videolar</strong>
-        <ul id="videos" style="margin-top: 8px">
+        <ul id="videos" class="video-list" style="margin-top: 8px">
           <li class="hint">Hali yoʻq</li>
         </ul>
       </section>

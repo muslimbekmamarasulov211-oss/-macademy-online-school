@@ -62,6 +62,7 @@ type Job = {
 
 const jobs = new Map<string, Job>();
 let busy = false;
+let currentJobId: string | null = null;
 // One Navoiy worker for the whole server: the model is loaded once and reused.
 const navoiy = new NavoiyWorker(ROOT);
 
@@ -110,16 +111,15 @@ const readJsonBody = (req: http.IncomingMessage, limit = 64 * 1024): Promise<unk
     req.on("error", reject);
   });
 
-/** Block cross-site form posts (CSRF): Origin, when present, must match Host. */
-const sameOrigin = (req: http.IncomingMessage) => {
-  const origin = req.headers.origin;
-  if (!origin) return true;
-  try {
-    return new URL(origin).host === req.headers.host;
-  } catch {
-    return false;
-  }
-};
+/**
+ * Block cross-site requests (CSRF). The page sends a custom header and JSON; another website
+ * cannot add a custom header without a CORS preflight, which this server never approves.
+ * (Unlike an Origin/Host comparison this also works behind a preview proxy.)
+ */
+const CSRF_HEADER = "x-macademy-generator";
+const isTrustedRequest = (req: http.IncomingMessage) =>
+  req.headers[CSRF_HEADER] === "1" &&
+  (req.headers["content-type"] ?? "").startsWith("application/json");
 
 const timestampName = () => {
   const d = new Date();
@@ -176,7 +176,7 @@ const runJob = async (
 };
 
 const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-  if (!sameOrigin(req)) return send(res, 403, { error: "Cross-site request blocked." });
+  if (!isTrustedRequest(req)) return send(res, 403, { error: "Cross-site request blocked." });
   if (busy) return send(res, 409, { error: "Another video is being generated. Please wait." });
 
   const body = (await readJsonBody(req)) as Record<string, unknown>;
@@ -234,6 +234,7 @@ const createJob = async (req: http.IncomingMessage, res: http.ServerResponse) =>
   };
   jobs.set(job.id, job);
   busy = true;
+  currentJobId = job.id;
   void runJob(job, settings, title, video);
   send(res, 202, job);
 };
@@ -333,6 +334,7 @@ const server = http.createServer(async (req, res) => {
         navoiyInstalled,
         azureConfigured: isAzureConfigured(),
         busy,
+        currentJobId: busy ? currentJobId : null,
         emotions: Object.keys(EMOTIONS),
         referenceVoices: navoiyInstalled ? listReferenceVoices(ROOT) : [],
         music: listMusic(ROOT),
