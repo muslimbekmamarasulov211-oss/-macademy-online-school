@@ -1,0 +1,23 @@
+{
+  "name": "macademy-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "M.ACADEMY vertical (1080x1920) Uzbek video studio built with Remotion",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:test": "remotion render TestVideo out/test-video.mp4",
+    "render": "remotion render",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.543",
+    "@remotion/fonts": "^4.0.543",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.543"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}
