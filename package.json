@@ -14,10 +14,12 @@
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run build"
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "clsx": "^2.1.1",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {

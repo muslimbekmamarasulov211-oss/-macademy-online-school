@@ -37,6 +37,20 @@ implemented and must not be added without an explicit task**: authentication,
 payments, database, AI agents (NIGINA is a visual preview only), admin
 functionality, course detail pages, user accounts, online enrollment.
 
+### Text-to-speech tool (Aisha AI)
+
+An internal Uzbek TTS tool lives at **`/tools/ovoz`** (not in the navigation, `noindex`).
+
+- The browser calls `POST /api/tts` (`src/app/api/tts/route.ts`); only the server talks
+  to Aisha (`src/lib/tts/aisha.server.ts`), using `AISHA_API_KEY` from
+  `src/config/env.server.ts`. The key never reaches the client.
+- Follow the official reference (https://aisha.group/uz/api-documentation/text-to-speech).
+  Do not invent endpoints or parameters. Shared options (moods, speed range, 1000-char
+  limit) are in `src/lib/tts/options.ts`.
+- The API returns WAV only; MP3 is encoded in the browser (`src/lib/tts/wav-to-mp3.ts`).
+- Requests spend Aisha balance and are rate-limited per IP (best-effort, in memory).
+- It is not wired into NIGINA. That still needs an explicit task.
+
 ### Sample content ("Namuna")
 
 The owner approved clearly labelled sample data for the homepage. All of it lives
